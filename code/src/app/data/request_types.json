@@ -1,0 +1,53 @@
+[
+    {
+      "request_type": "Adjustment",
+      "sub_request_types": [
+        "AU Transfer",
+        "Closing Notice",
+        "Reallocation Fees",
+        "Amendment Fees",
+        "Reallocation Principal"
+      ],
+      "description": "Requests related to adjustments to loan accounts",
+      "keywords": ["adjust", "transfer", "reallocate", "amend", "close"]
+    },
+    {
+      "request_type": "Commitment Change",
+      "sub_request_types": [
+        "Cashless Roll",
+        "Decrease",
+        "Increase"
+      ],
+      "description": "Requests to modify loan commitment amounts",
+      "keywords": ["commitment", "increase", "decrease", "roll", "change"]
+    },
+    {
+      "request_type": "Fee Payment",
+      "sub_request_types": [
+        "Ongoing Fee",
+        "Letter of Credit Fee"
+      ],
+      "description": "Requests related to fee payments",
+      "keywords": ["fee", "payment", "charge", "credit fee"]
+    },
+    {
+      "request_type": "Money Movement-Inbound",
+      "sub_request_types": [
+        "Principal",
+        "Interest",
+        "Principal + Interest",
+        "Principal+Interest+Fee"
+      ],
+      "description": "Requests for incoming fund transfers",
+      "keywords": ["deposit", "transfer in", "funding", "inbound", "payment"]
+    },
+    {
+      "request_type": "Money Movement-Outbound",
+      "sub_request_types": [
+        "Timebound",
+        "Foreign Currency"
+      ],
+      "description": "Requests for outgoing fund transfers",
+      "keywords": ["withdraw", "transfer out", "outbound", "payment out"]
+    }
+  ]

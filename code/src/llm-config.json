@@ -1,0 +1,30 @@
+{
+    "email_classification": {
+        "llm": "ChatAnthropic",
+        "model": "claude-3-7-sonnet-20250219",
+        "temperature": 0.0,
+        "api_key_name": "ANTHROPIC_API_KEY"
+    },
+    "data_extraction": {
+        "llm": "ChatAnthropic",
+        "model": "claude-3-7-sonnet-20250219",
+        "temperature": 0.0,
+        "api_key_name": "ANTHROPIC_API_KEY"
+    },
+    "duplicate_detection": {
+        "llm": "ChatAnthropic",
+        "model": "claude-3-5-sonnet-20241022",
+        "temperature": 0.0,
+        "api_key_name": "ANTHROPIC_API_KEY"
+    },
+    "fallback": {
+        "llm": "AzureChatOpenAI",
+        "model": "gpt-4",
+        "temperature": 0.0,
+        "api_key_name": "AZURE_OPENAI_API_KEY",
+        "openai_api_version": "2023-05-15",
+        "openai_api_base": "https://your-resource-name.openai.azure.com/",
+        "openai_api_type": "azure",
+        "deployment_name": "gpt-4"
+    }
+}
