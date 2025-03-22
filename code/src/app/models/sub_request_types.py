@@ -1,9 +1,7 @@
 from bson import ObjectId
 
-
-from ..schemas.request_types import SubRequestTypeSchema, RequestTypeSchema
+from ..schemas.request_types import RequestTypeSchema, SubRequestTypeSchema
 from .request_types import RequestTypeModel
-
 
 
 class SubRequestTypeModel:
@@ -19,7 +17,7 @@ class SubRequestTypeModel:
 
     @staticmethod
     async def get_by_id(sub_request_type_id: str):
-        return await SubRequestTypeSchema.find({"_id": ObjectId(sub_request_type_id)})
+        return await SubRequestTypeSchema.find_one({"_id": ObjectId(sub_request_type_id)})
 
     @staticmethod
     async def update(sub_request_type_id: str, update_data: dict):
