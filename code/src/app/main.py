@@ -1,17 +1,22 @@
-import os
 import logging
+import os
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 
 from app.api.routes import router
+from app.config import get_extraction_rules, get_request_types, get_settings
 from app.core.api_manager import ApiManager
 from app.core.llm_handler import LLMHandler
-from app.services.email_processor import EmailProcessor
-from app.services.duplicate_detector import DuplicateDetector
-from app.services.data_extractor import DataExtractor
 from app.services.classification_service import ClassificationService
-from app.config import get_settings, get_request_types, get_extraction_rules
+from app.services.data_extractor import DataExtractor
+from app.services.duplicate_detector import DuplicateDetector
+from app.services.email_processor import EmailProcessor
+
+from .api import router as request_config_router
+from .db.session import close_db, init_db
 
 # Get settings
 settings = get_settings()
@@ -66,6 +71,7 @@ app.state.classification_service = get_classification_service()
 
 # Include routes
 app.include_router(router)
+app.include_router(request_config_router)
 
 # Custom OpenAPI schema
 def custom_openapi():
@@ -88,7 +94,7 @@ app.openapi = custom_openapi
 async def startup_event():
     """Startup event handler"""
     logger.info("Starting up Email Classification API")
-    
+    await init_db()
     # Log configuration
     logger.info(f"Loaded {len(request_types)} request types")
     logger.info(f"Loaded extraction rules for {len(extraction_rules)} request types")
@@ -107,10 +113,12 @@ async def startup_event():
 async def shutdown_event():
     """Shutdown event handler"""
     logger.info("Shutting down Email Classification API")
+    await close_db()
+
 
 if __name__ == "__main__":
     import uvicorn
-    
+
     # Start server
     uvicorn.run(
         "app.main:app", 
