@@ -51,6 +51,48 @@ class EmailProcessRequest(BaseModel):
             }
         }
 
+class EmailChainRequest(BaseModel):
+    """Model for email chain processing request"""
+    email_chain_file_b64: str
+    email_chain_filename: str
+    email_chain_content_type: str
+    attachments: Optional[List[EmailAttachment]] = []
+    thread_id: Optional[str] = None
+    
+    @property
+    def email_chain_content(self) -> bytes:
+        """Decode base64 content to bytes"""
+        return base64.b64decode(self.email_chain_file_b64)
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "email_chain_filename": "email_thread.pdf",
+                "email_chain_content_type": "application/pdf",
+                "email_chain_file_b64": "JVBERi0xLjUK...",
+                "attachments": [],
+                "thread_id": "thread-12345"
+            }
+        }
+
+class EmlRequest(BaseModel):
+    """Model for EML file processing request"""
+    eml_file_b64: str
+    thread_id: Optional[str] = None
+    
+    @property
+    def eml_content(self) -> bytes:
+        """Decode base64 content to bytes"""
+        return base64.b64decode(self.eml_file_b64)
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "eml_file_b64": "UmVjZWl2ZWQ6IGZyb20...",
+                "thread_id": "thread-12345"
+            }
+        }
+
 class RequestTypeDefinition(BaseModel):
     """Model for request type definition input"""
     request_type: str

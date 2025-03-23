@@ -58,52 +58,51 @@ class DataExtractor:
             for attachment in attachments:
                 # Truncate very long attachments
                 text = attachment["text"]
-                truncated_text = text[:3000] + "..." if len(text) > 3000 else text
-                attachments_str += f"\n\nATTACHMENT {attachment['index']}: {attachment['filename']}\n{truncated_text}"
+                attachments_str += f"\n\nATTACHMENT {attachment['index']}: {attachment['filename']}\n{text}"
             
             # Create system prompt
             system_prompt = f"""You are an AI assistant specializing in extracting data from banking service emails.
 
-TASK:
-Extract relevant fields based on the identified request type: {request_type} - {sub_request_type}
+                TASK:
+                Extract relevant fields based on the identified request type: {request_type} - {sub_request_type}
 
-YOUR RESPONSE MUST BE A VALID JSON ARRAY of objects with this structure:
-[
-  {{
-    "field_name": "amount",
-    "value": 50000,
-    "confidence": 0.98,
-    "source": "email_body"
-  }},
-  ...
-]
+                YOUR RESPONSE MUST BE A VALID JSON ARRAY of objects with this structure:
+                [
+                {{
+                    "field_name": "amount",
+                    "value": 50000,
+                    "confidence": 0.98,
+                    "source": "email_body"
+                }},
+                ...
+                ]
 
-FIELDS TO EXTRACT:
-{json.dumps(fields_to_extract, indent=2)}
+                FIELDS TO EXTRACT:
+                {json.dumps(fields_to_extract, indent=2)}
 
-PRIORITY SOURCES (in order of preference):
-{json.dumps(priority_sources, indent=2)}
+                PRIORITY SOURCES (in order of preference):
+                {json.dumps(priority_sources, indent=2)}
 
-RULES:
-- Source should be "email_body" or "attachment_1", "attachment_2", etc.
-- Only extract fields you are confident about (provide confidence score 0-1)
-- For numerical values, provide them as numbers not strings when appropriate
-- Format dates in ISO format (YYYY-MM-DD) when possible
-- Look for specific evidence within the text to support your extraction
-- Prefer sources in the priority order provided above
-- Don't include fields where you couldn't find any relevant information (confidence < 0.5)
-- If the same field is found in multiple sources, choose the highest priority source
-"""
+                RULES:
+                - Source should be "email_body" or "attachment_1", "attachment_2", etc.
+                - Only extract fields you are confident about (provide confidence score 0-1)
+                - For numerical values, provide them as numbers not strings when appropriate
+                - Format dates in ISO format (YYYY-MM-DD) when possible
+                - Look for specific evidence within the text to support your extraction
+                - Prefer sources in the priority order provided above
+                - Don't include fields where you couldn't find any relevant information (confidence < 0.5)
+                - If the same field is found in multiple sources, choose the highest priority source
+                """
             
             # Create human prompt
             human_prompt = f"""REQUEST TYPE: {request_type} - {sub_request_type}
 
-EMAIL CONTENT:
-{email_content}
-{attachments_str}
+                EMAIL CONTENT:
+                {email_content}
+                {attachments_str}
 
-Based on the above email content and attachments, extract all relevant fields.
-"""
+                Based on the above email content and attachments, extract all relevant fields.
+                """
             
             # Get LLM for data extraction
             llm = self.llm_handler.get_llm("data_extraction")
