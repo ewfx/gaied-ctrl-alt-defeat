@@ -1,21 +1,27 @@
 {
     "email_classification": {
-        "llm": "ChatAnthropic",
-        "model": "claude-3-7-sonnet-20250219",
-        "temperature": 0.0,
-        "api_key_name": "ANTHROPIC_API_KEY"
+        "llm": "OpenRouterLLM",
+        "model": "deepseek/deepseek-r1:free",
+        "temperature": 0.7,
+        "api_key_name": "OPENROUTER_API_KEY",
+        "http_referer": "https://localhost",
+        "x_title": "Your Application Name"
     },
     "data_extraction": {
-        "llm": "ChatAnthropic",
-        "model": "claude-3-7-sonnet-20250219",
-        "temperature": 0.0,
-        "api_key_name": "ANTHROPIC_API_KEY"
+        "llm": "OpenRouterLLM",
+        "model": "deepseek/deepseek-r1:free",
+        "temperature": 0.7,
+        "api_key_name": "OPENROUTER_API_KEY",
+        "http_referer": "https://localhost",
+        "x_title": "Your Application Name"
     },
     "duplicate_detection": {
-        "llm": "ChatAnthropic",
-        "model": "claude-3-5-sonnet-20241022",
-        "temperature": 0.0,
-        "api_key_name": "ANTHROPIC_API_KEY"
+        "llm": "OpenRouterLLM",
+        "model": "deepseek/deepseek-r1:free",
+        "temperature": 0.7,
+        "api_key_name": "OPENROUTER_API_KEY",
+        "http_referer": "https://localhost",
+        "x_title": "Your Application Name"
     },
     "fallback": {
         "llm": "OpenRouterLLM",

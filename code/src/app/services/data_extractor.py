@@ -4,7 +4,6 @@ import re
 from typing import Dict, List, Any, Optional, Tuple, Union
 
 from langchain.schema.messages import SystemMessage, HumanMessage
-from langchain.output_parsers import OutputFixingParser
 
 from app.core.llm_handler import LLMHandler
 from app.models.response_models import ExtractedField
@@ -148,7 +147,17 @@ class DataExtractor:
                 logger.debug(f"Raw response: {response_content}")
                 
                 # Try to fix JSON with OutputFixingParser
-                fixing_parser = OutputFixingParser.from_llm(llm=llm)
+                from langchain.output_parsers import OutputFixingParser
+                from langchain_core.output_parsers import JsonOutputParser
+                
+                # Create a JsonOutputParser first as the base parser
+                base_parser = JsonOutputParser()
+                
+                # Then create the OutputFixingParser with both the LLM and the base parser
+                fixing_parser = OutputFixingParser.from_llm(
+                    llm=llm,
+                    parser=base_parser
+                )
                 
                 try:
                     fixed_json = fixing_parser.parse(response_content)

@@ -23,21 +23,24 @@ class OpenRouterLLM(BaseChatOpenAI):
     
     def __init__(
         self,
-        model: str = "deepseek/deepseek-r1:free",
+        model_name: str = "deepseek/deepseek-r1:free",  # Changed from model to model_name
         openai_api_key: str = None,
         temperature: float = 0.7,
         openrouter_headers: Optional[Dict[str, str]] = None,
         callbacks = None,
         **kwargs
     ):
+        # We need to set model_name as self.model before calling super().__init__
+        # to ensure it's available during initialization
         super().__init__(
-            model=model,
+            model_name=model_name,  # Pass model_name instead of model
             openai_api_key=openai_api_key,
             openai_api_base="https://openrouter.ai/api/v1",
             temperature=temperature,
             callbacks=callbacks,
             **kwargs
         )
+        # Set openrouter_headers after super().__init__
         self.openrouter_headers = openrouter_headers or {}
         
     def _create_params(self, **kwargs):
@@ -129,7 +132,7 @@ class LLMHandler:
                 openrouter_headers["X-Title"] = config["x_title"]
                 
             return llm_class(
-                model=config["model"],
+                model_name=config["model"],  # Changed from model to model_name
                 openai_api_key=api_key,
                 temperature=config["temperature"],
                 callbacks=callbacks,
