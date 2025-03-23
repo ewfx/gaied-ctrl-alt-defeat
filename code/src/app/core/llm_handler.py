@@ -1,23 +1,55 @@
 import json
 import os
 import logging
-from typing import Dict, List
+from typing import Dict, Optional
 
-from langchain.output_parsers import ResponseSchema, StructuredOutputParser
 from langchain.callbacks.manager import CallbackManager
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 
 # Import LLM providers
 from langchain_anthropic import ChatAnthropic
-from langchain_openai import AzureChatOpenAI, ChatOpenAI
+from langchain_openai import ChatOpenAI
+from langchain.chat_models.openai import ChatOpenAI as BaseChatOpenAI
 
 from app.core.api_manager import ApiManager
 
 logger = logging.getLogger(__name__)
 
+class OpenRouterLLM(BaseChatOpenAI):
+    """
+    Custom LLM class for OpenRouter integration (DeepSeek R1, etc).
+    """
+    openrouter_headers: Optional[Dict[str, str]] = None
+    
+    def __init__(
+        self,
+        model: str = "deepseek/deepseek-r1:free",
+        openai_api_key: str = None,
+        temperature: float = 0.7,
+        openrouter_headers: Optional[Dict[str, str]] = None,
+        callbacks = None,
+        **kwargs
+    ):
+        super().__init__(
+            model=model,
+            openai_api_key=openai_api_key,
+            openai_api_base="https://openrouter.ai/api/v1",
+            temperature=temperature,
+            callbacks=callbacks,
+            **kwargs
+        )
+        self.openrouter_headers = openrouter_headers or {}
+        
+    def _create_params(self, **kwargs):
+        params = super()._create_params(**kwargs)
+        if self.openrouter_headers:
+            # Add OpenRouter specific headers
+            params["extra_headers"] = self.openrouter_headers
+        return params
+
 class LLMHandler:
     """
-    Handles interactions with various LLM providers using LangChain.
+    Handles interactions with Anthropic, OpenAI and DeepSeek LLM providers using LangChain.
     """
     
     def __init__(self, api_manager: ApiManager, config_filename: str = "llm-config.json"):
@@ -45,8 +77,8 @@ class LLMHandler:
         # Map LLM class names to actual classes
         self.llm_class_mapping = {
             "ChatAnthropic": ChatAnthropic,
-            "AzureChatOpenAI": AzureChatOpenAI,
             "ChatOpenAI": ChatOpenAI,
+            "OpenRouterLLM": OpenRouterLLM,
         }
 
     def get_llm(self, task_type: str):
@@ -77,29 +109,35 @@ class LLMHandler:
         llm_class = self.llm_class_mapping.get(llm_class_name)
         if not llm_class:
             logger.error(f"Unknown LLM class: {llm_class_name}")
-            raise ValueError(f"Unknown LLM class: {llm_class_name}")
+            raise ValueError(f"Unknown or unsupported LLM class: {llm_class_name}")
         
         # Get API key
         api_key = self.api_manager.get_key(config["api_key_name"])
         
-        # Create LLM instance based on class
-        if llm_class_name == "AzureChatOpenAI":
+        # Add streaming if specified
+        callbacks = None
+        if config.get("streaming", False):
+            callbacks = CallbackManager([StreamingStdOutCallbackHandler()])
+        
+        # Special handling for OpenRouter models (DeepSeek R1)
+        if llm_class_name == "OpenRouterLLM":
+            # Get optional OpenRouter headers
+            openrouter_headers = {}
+            if config.get("http_referer"):
+                openrouter_headers["HTTP-Referer"] = config["http_referer"]
+            if config.get("x_title"):
+                openrouter_headers["X-Title"] = config["x_title"]
+                
             return llm_class(
-                openai_api_version=config["openai_api_version"],
+                model=config["model"],
                 openai_api_key=api_key,
                 temperature=config["temperature"],
-                azure_endpoint=config["openai_api_base"],
-                openai_api_type=config["openai_api_type"],
-                deployment_name=config["deployment_name"],
+                callbacks=callbacks,
+                openrouter_headers=openrouter_headers,
             )
         else:
             # Handle other LLM types with common parameters
             api_key_param = {f"{config['api_key_name'].lower()}": api_key}
-            
-            # Add streaming if specified
-            callbacks = None
-            if config.get("streaming", False):
-                callbacks = CallbackManager([StreamingStdOutCallbackHandler()])
             
             return llm_class(
                 model=config["model"],
@@ -107,38 +145,3 @@ class LLMHandler:
                 callbacks=callbacks,
                 **api_key_param,
             )
-    
-    def format_message_history(self, 
-                              system_prompt: str, 
-                              messages: List[Dict[str, str]] = None) -> List[Dict[str, str]]:
-        """
-        Format message history for LLM conversation
-        
-        Args:
-            system_prompt: System prompt to use
-            messages: List of previous messages (optional)
-            
-        Returns:
-            Formatted message history
-        """
-        history = [{"role": "system", "content": system_prompt}]
-        
-        if messages:
-            for msg in messages:
-                if msg["role"] not in ["user", "assistant", "system"]:
-                    continue
-                history.append({"role": msg["role"], "content": msg["content"]})
-        
-        return history
-    
-    def structured_output_parser(self, schema_fields: List[ResponseSchema]):
-        """
-        Create a structured output parser for LLM responses
-        
-        Args:
-            schema_fields: List of response schema fields
-            
-        Returns:
-            StructuredOutputParser instance
-        """
-        return StructuredOutputParser.from_response_schemas(schema_fields)

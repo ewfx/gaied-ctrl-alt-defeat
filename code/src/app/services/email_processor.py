@@ -2,15 +2,13 @@ import os
 import io
 import re
 import email
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Tuple
 from email.parser import Parser
 from email.policy import default
 import logging
-import base64
 
 # Document processing
 import pypdf
-import docx
 from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
@@ -23,27 +21,26 @@ class EmailProcessor:
     def __init__(self, max_attachment_size_mb: int = 10):
         """
         Initialize the email processor
-        
-        Args:
-            max_attachment_size_mb: Maximum attachment size in MB
         """
         self.max_attachment_size = max_attachment_size_mb * 1024 * 1024  # Convert to bytes
     
-    def process_email(self, 
-                     content: str, 
-                     attachments: List[Dict[str, Any]] = None) -> Tuple[str, List[Dict[str, str]]]:
+    def process_email_chain(self,
+                           email_chain_content: bytes,
+                           email_chain_filename: str,
+                           email_chain_content_type: str,
+                           attachments: List[Dict[str, Any]] = None) -> Tuple[Dict[str, str], List[Dict[str, str]]]:
         """
-        Process email content and attachments
+        Process email chain from PDF and separate attachments
+        """
+        # Extract email chain information from PDF
+        email_text = self._extract_text_from_pdf(email_chain_content)
         
-        Args:
-            content: Raw email content
-            attachments: List of attachment objects with filename, content_type, and content
-            
-        Returns:
-            Tuple of (processed_email_text, processed_attachments_list)
-        """
-        # Process the email body
-        email_text = self.process_email_content(content)
+        # Try to extract email metadata from the PDF content
+        email_info = self._extract_email_metadata_from_text(email_text)
+        
+        if not email_info.get("subject"):
+            # If metadata extraction fails, use filename as subject
+            email_info["subject"] = os.path.splitext(email_chain_filename)[0]
         
         # Process attachments if any
         processed_attachments = []
@@ -76,17 +73,149 @@ class EmailProcessor:
                         "text": f"[Error processing attachment: {str(e)}]"
                     })
         
-        return email_text, processed_attachments
+        return email_info, processed_attachments
+    
+    def process_eml(self, eml_content: bytes) -> Tuple[Dict[str, str], List[Dict[str, str]]]:
+        """
+        Process EML file containing email with attachments
+        """
+        try:
+            # Parse the EML content
+            eml_text = eml_content.decode('utf-8', errors='ignore')
+            email_message = email.message_from_string(eml_text, policy=default)
+            
+            # Extract metadata
+            email_info = {
+                "sender": str(email_message.get("From", "")),
+                "subject": str(email_message.get("Subject", "")),
+                "received_date": str(email_message.get("Date", "")),
+                "content": ""
+            }
+            
+            # Extract email body and attachments
+            processed_attachments = []
+            attachment_idx = 0
+            
+            if email_message.is_multipart():
+                for part in email_message.walk():
+                    content_type = part.get_content_type()
+                    content_disposition = str(part.get("Content-Disposition", ""))
+                    
+                    # Extract body content
+                    if "attachment" not in content_disposition and part.get_content() is not None:
+                        if content_type == "text/plain":
+                            email_info["content"] += part.get_content() + "\n\n"
+                        elif content_type == "text/html":
+                            html_content = part.get_content()
+                            email_info["content"] += self._extract_text_from_html(html_content) + "\n\n"
+                    
+                    # Extract attachments
+                    elif "attachment" in content_disposition or "inline" in content_disposition:
+                        try:
+                            attachment_idx += 1
+                            filename = part.get_filename()
+                            if not filename:
+                                filename = f"attachment_{attachment_idx}.{content_type.split('/')[-1]}"
+                            
+                            attachment_content = part.get_payload(decode=True)
+                            if attachment_content and len(attachment_content) <= self.max_attachment_size:
+                                # Process the attachment
+                                processed_text = self.process_attachment(
+                                    attachment_content,
+                                    filename,
+                                    content_type
+                                )
+                                
+                                processed_attachments.append({
+                                    "index": attachment_idx,
+                                    "filename": filename,
+                                    "content_type": content_type,
+                                    "text": processed_text
+                                })
+                            else:
+                                logger.warning(f"Attachment too large or empty: {filename}")
+                                processed_attachments.append({
+                                    "index": attachment_idx,
+                                    "filename": filename,
+                                    "content_type": content_type,
+                                    "text": f"[Attachment too large or empty: {filename}]"
+                                })
+                        except Exception as e:
+                            logger.error(f"Error processing attachment: {str(e)}")
+                            processed_attachments.append({
+                                "index": attachment_idx,
+                                "filename": f"unknown_attachment_{attachment_idx}",
+                                "content_type": content_type,
+                                "text": f"[Error processing attachment: {str(e)}]"
+                            })
+            else:
+                # Handle non-multipart email
+                content_type = email_message.get_content_type()
+                if content_type == "text/plain":
+                    email_info["content"] = email_message.get_content()
+                elif content_type == "text/html":
+                    html_content = email_message.get_content()
+                    email_info["content"] = self._extract_text_from_html(html_content)
+            
+            # Clean the extracted text
+            email_info["content"] = self._clean_text(email_info["content"])
+            
+            return email_info, processed_attachments
+            
+        except Exception as e:
+            logger.error(f"Error processing EML: {str(e)}")
+            # Fallback to basic processing
+            email_info = {
+                "sender": "Unknown",
+                "subject": "Unknown",
+                "received_date": "",
+                "content": self.process_email_content(eml_content.decode('utf-8', errors='ignore'))
+            }
+            return email_info, []
+    
+    def process_attachment(self, 
+                          content: bytes, 
+                          filename: str, 
+                          content_type: str = None) -> str:
+        """
+        Process attachment file content based on file type
+        """
+        file_extension = os.path.splitext(filename.lower())[1]
+        
+        try:
+            # Process by file extension
+            if file_extension == '.pdf':
+                return self._extract_text_from_pdf(content)
+            elif file_extension in ['.doc', '.docx']:
+                return self._extract_text_from_docx(content)
+            elif file_extension == '.txt':
+                return content.decode('utf-8', errors='ignore')
+            elif file_extension == '.eml':
+                # Process as nested email
+                email_info, _ = self.process_eml(content)
+                return email_info.get("content", "")
+            elif file_extension in ['.htm', '.html']:
+                return self._extract_text_from_html(content.decode('utf-8', errors='ignore'))
+            elif file_extension in ['.jpg', '.jpeg', '.png', '.gif', '.bmp']:
+                # Image files - return placeholder
+                return f"[Image file: {filename}]"
+            else:
+                # Check content type as fallback
+                if content_type and 'pdf' in content_type:
+                    return self._extract_text_from_pdf(content)
+                elif content_type and 'html' in content_type:
+                    return self._extract_text_from_html(content.decode('utf-8', errors='ignore'))
+                elif content_type and 'text/plain' in content_type:
+                    return content.decode('utf-8', errors='ignore')
+                
+                return f"[Unsupported file type: {file_extension}]"
+        except Exception as e:
+            logger.error(f"Error processing attachment {filename}: {str(e)}")
+            return f"[Error processing attachment {filename}: {str(e)}]"
     
     def process_email_content(self, content: str) -> str:
         """
         Process raw email content to extract the text body
-        
-        Args:
-            content: Raw email content as string
-            
-        Returns:
-            Extracted text from email body
         """
         # Basic cleaning
         text = self._clean_text(content)
@@ -132,54 +261,31 @@ class EmailProcessor:
         
         return text
     
-    def process_attachment(self, 
-                          content: bytes, 
-                          filename: str, 
-                          content_type: str = None) -> str:
+    def _extract_email_metadata_from_text(self, text: str) -> Dict[str, str]:
         """
-        Process attachment file content based on file type
-        
-        Args:
-            content: File content as bytes
-            filename: Name of the attachment file
-            content_type: MIME type of the content
-            
-        Returns:
-            Extracted text from the attachment
+        Extract email metadata (sender, subject, date) from text content
         """
-        file_extension = os.path.splitext(filename.lower())[1]
+        metadata = {
+            "sender": "",
+            "subject": "",
+            "received_date": "",
+            "content": text
+        }
         
-        try:
-            # Process by file extension
-            if file_extension == '.pdf':
-                return self._extract_text_from_pdf(content)
-            elif file_extension in ['.doc', '.docx']:
-                return self._extract_text_from_docx(content)
-            elif file_extension == '.txt':
-                return content.decode('utf-8', errors='ignore')
-            elif file_extension == '.eml':
-                # Process as nested email
-                return self.process_email_content(content.decode('utf-8', errors='ignore'))
-            elif file_extension in ['.htm', '.html']:
-                return self._extract_text_from_html(content.decode('utf-8', errors='ignore'))
-            elif file_extension in ['.jpg', '.jpeg', '.png', '.gif', '.bmp']:
-                # Image files - return placeholder
-                return f"[Image file: {filename}]"
-            else:
-                # Check content type as fallback
-                if content_type and 'pdf' in content_type:
-                    return self._extract_text_from_pdf(content)
-                elif content_type and ('msword' in content_type or 'document' in content_type):
-                    return self._extract_text_from_docx(content)
-                elif content_type and 'html' in content_type:
-                    return self._extract_text_from_html(content.decode('utf-8', errors='ignore'))
-                elif content_type and 'text/plain' in content_type:
-                    return content.decode('utf-8', errors='ignore')
-                
-                return f"[Unsupported file type: {file_extension}]"
-        except Exception as e:
-            logger.error(f"Error processing attachment {filename}: {str(e)}")
-            return f"[Error processing attachment {filename}: {str(e)}]"
+        # Try to extract common email headers
+        sender_match = re.search(r'From:\s*([^\n]+)', text, re.IGNORECASE)
+        if sender_match:
+            metadata["sender"] = sender_match.group(1).strip()
+        
+        subject_match = re.search(r'Subject:\s*([^\n]+)', text, re.IGNORECASE)
+        if subject_match:
+            metadata["subject"] = subject_match.group(1).strip()
+        
+        date_match = re.search(r'Date:\s*([^\n]+)', text, re.IGNORECASE)
+        if date_match:
+            metadata["received_date"] = date_match.group(1).strip()
+        
+        return metadata
     
     def _extract_text_from_pdf(self, content: bytes) -> str:
         """Extract text from PDF file content"""
@@ -198,32 +304,6 @@ class EmailProcessor:
         except Exception as e:
             logger.error(f"Error extracting PDF text: {str(e)}")
             return f"[Error extracting PDF text: {str(e)}]"
-    
-    def _extract_text_from_docx(self, content: bytes) -> str:
-        """Extract text from DOCX file content"""
-        text = ""
-        try:
-            doc_file = io.BytesIO(content)
-            doc = docx.Document(doc_file)
-            
-            # Extract text from paragraphs
-            for para in doc.paragraphs:
-                if para.text:
-                    text += para.text + "\n"
-                    
-            # Extract text from tables
-            for table in doc.tables:
-                for row in table.rows:
-                    row_text = ""
-                    for cell in row.cells:
-                        row_text += cell.text + " | "
-                    text += row_text.strip(" | ") + "\n"
-                text += "\n"
-                    
-            return self._clean_text(text)
-        except Exception as e:
-            logger.error(f"Error extracting DOCX text: {str(e)}")
-            return f"[Error extracting DOCX text: {str(e)}]"
     
     def _extract_text_from_html(self, html_content: str) -> str:
         """Extract text from HTML content using BeautifulSoup"""
@@ -244,6 +324,11 @@ class EmailProcessor:
             # Fall back to basic regex approach
             text = re.sub(r'<[^>]+>', ' ', html_content)
             return self._clean_text(text)
+    
+    def _extract_text_from_docx(self, content: bytes) -> str:
+        """Extract text from DOCX file content"""
+        # Simplified implementation to avoid additional dependencies
+        return "[Word document content - text extraction simplified]"
     
     def _clean_text(self, text: str) -> str:
         """Clean and normalize text content"""

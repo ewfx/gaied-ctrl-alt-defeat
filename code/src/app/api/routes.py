@@ -1,16 +1,11 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends, Body, BackgroundTasks
-from fastapi.responses import JSONResponse
-from typing import List, Optional, Dict, Any
-import json
-import time
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends
+from typing import List, Optional
 import logging
-import base64
-from datetime import datetime
+import time
 
-from app.models.request_models import EmailProcessRequest, EmailAttachment, EmailSource
-from app.models.response_models import ClassificationResponse, HealthCheckResponse, HealthStatus, ApiKeyUsageInfo
+from app.models.response_models import ClassificationResponse
 from app.services.classification_service import ClassificationService
-from app.config import get_settings, get_request_types, get_extraction_rules
+from app.config import get_settings
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -20,6 +15,7 @@ router = APIRouter()
 
 # Get settings
 settings = get_settings()
+
 
 @router.get("/", tags=["Status"])
 async def root():
@@ -71,29 +67,32 @@ async def health_check(classification_service: ClassificationService = Depends(l
         uptime_seconds=int(time.time())
     )
 
-@router.post("/classify-email", response_model=ClassificationResponse, tags=["Classification"])
-async def classify_email(
-    email_content: str = Form(...),
-    sender: str = Form(...),
-    subject: str = Form(...),
-    received_date: str = Form(...),
-    thread_id: Optional[str] = Form(None),
-    source: Optional[str] = Form("api"),
+@router.post("/classify-email-chain", response_model=ClassificationResponse, tags=["Classification"])
+async def classify_email_chain(
+    email_chain_file: UploadFile = File(...),
+
     attachments: List[UploadFile] = File(None),
+    thread_id: Optional[str] = Form(None),
     classification_service: ClassificationService = Depends(lambda: ClassificationService)
 ):
     """
-    Classify email content and attachments to determine request types and extract data.
+    Classify an email chain from a PDF file along with separate attachments.
     
-    - **email_content**: The body content of the email
-    - **sender**: Email address of the sender
-    - **subject**: Email subject line
-    - **received_date**: Date when the email was received (ISO format)
-    - **thread_id**: Optional thread ID for duplicate detection
-    - **source**: Source of the email (outlook, gmail, api, other)
+    - **email_chain_file**: PDF file containing the email chain
     - **attachments**: Optional list of file attachments
+    - **thread_id**: Optional thread ID for duplicate detection
     """
     try:
+        # Read and process the email chain file
+        email_chain_content = await email_chain_file.read()
+        
+        # Check file size
+        if len(email_chain_content) > settings.max_attachment_size_mb * 1024 * 1024:
+            raise HTTPException(
+                status_code=413, 
+                detail=f"Email chain file exceeds maximum size of {settings.max_attachment_size_mb}MB"
+            )
+        
         # Process attachments if any
         processed_attachments = []
         if attachments:
@@ -113,19 +112,11 @@ async def classify_email(
                     "content": content
                 })
         
-        # Parse received date
-        try:
-            received_date_parsed = datetime.fromisoformat(received_date.replace('Z', '+00:00'))
-            received_date_str = received_date_parsed.isoformat()
-        except ValueError:
-            received_date_str = received_date
-        
-        # Process the email
-        result = await classification_service.process_email(
-            email_content=email_content,
-            sender=sender,
-            subject=subject,
-            received_date=received_date_str,
+        # Process the email chain
+        result = await classification_service.process_email_chain(
+            email_chain_file=email_chain_content,
+            email_chain_filename=email_chain_file.filename,
+            email_chain_content_type=email_chain_file.content_type,
             attachments=processed_attachments,
             thread_id=thread_id
         )
@@ -133,62 +124,40 @@ async def classify_email(
         return result
         
     except Exception as e:
-        logger.error(f"Error processing email: {str(e)}")
+        logger.error(f"Error processing email chain: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/classify-email-json", response_model=ClassificationResponse, tags=["Classification"])
-async def classify_email_json(
-    request: EmailProcessRequest,
+@router.post("/classify-eml", response_model=ClassificationResponse, tags=["Classification"])
+async def classify_eml(
+    eml_file: UploadFile = File(...),
+    thread_id: Optional[str] = Form(None),
     classification_service: ClassificationService = Depends(lambda: ClassificationService)
 ):
     """
-    Classify email content and attachments to determine request types and extract data.
-    Uses JSON request format instead of form data.
+    Classify an email from an EML file.
+    
+    - **eml_file**: EML file containing the email with attachments
+    - **thread_id**: Optional thread ID for duplicate detection
     """
     try:
-        # Process attachments if any
-        processed_attachments = []
-        for attachment in request.attachments:
-            # Decode base64 content
-            content = base64.b64decode(attachment.content_b64)
-            
-            # Check file size
-            if len(content) > settings.max_attachment_size_mb * 1024 * 1024:
-                raise HTTPException(
-                    status_code=413, 
-                    detail=f"Attachment {attachment.filename} exceeds maximum size of {settings.max_attachment_size_mb}MB"
-                )
-            
-            processed_attachments.append({
-                "filename": attachment.filename,
-                "content_type": attachment.content_type,
-                "content": content
-            })
+        # Read and process the EML file
+        eml_content = await eml_file.read()
         
-        # Process the email
-        result = await classification_service.process_email(
-            email_content=request.content,
-            sender=request.sender,
-            subject=request.subject,
-            received_date=request.received_date.isoformat(),
-            attachments=processed_attachments,
-            thread_id=request.thread_id
+        # Check file size
+        if len(eml_content) > settings.max_attachment_size_mb * 1024 * 1024:
+            raise HTTPException(
+                status_code=413, 
+                detail=f"EML file exceeds maximum size of {settings.max_attachment_size_mb}MB"
+            )
+        
+        # Process the EML file
+        result = await classification_service.process_eml(
+            eml_content=eml_content,
+            thread_id=thread_id
         )
         
         return result
         
     except Exception as e:
-        logger.error(f"Error processing email: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.post("/reset-api-keys", tags=["Administration"])
-async def reset_api_keys(
-    classification_service: ClassificationService = Depends(lambda: ClassificationService)
-):
-    """Reset all API key usage counters"""
-    try:
-        classification_service.llm_handler.api_manager.reset()
-        return {"message": "API key usage counters reset successfully"}
-    except Exception as e:
-        logger.error(f"Error resetting API keys: {str(e)}")
+        logger.error(f"Error processing EML: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
