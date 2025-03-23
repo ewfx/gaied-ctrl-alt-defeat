@@ -71,11 +71,6 @@ async def health_check(classification_service: ClassificationService = Depends(l
         uptime_seconds=int(time.time())
     )
 
-@router.get("/request-types", tags=["Configuration"])
-async def get_all_request_types():
-    """Get all supported request types and sub-request types"""
-    return get_request_types()
-
 @router.post("/classify-email", response_model=ClassificationResponse, tags=["Classification"])
 async def classify_email(
     email_content: str = Form(...),
