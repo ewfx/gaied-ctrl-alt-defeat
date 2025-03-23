@@ -9,7 +9,7 @@ from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 # Import LLM providers
 from langchain_anthropic import ChatAnthropic
 from langchain_openai import ChatOpenAI
-from langchain.chat_models.openai import ChatOpenAI as BaseChatOpenAI
+from langchain_community.chat_models.openai import ChatOpenAI as BaseChatOpenAI
 
 from app.core.api_manager import ApiManager
 
