@@ -66,6 +66,8 @@ export default function RequestTypeList() {
       setData(response.data);
       setLoading(false);
     } catch (error) {
+        toast("something went wrong")
+        setLoading(false)
       console.error("Error fetching data:", error);
     }
   };

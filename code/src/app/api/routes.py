@@ -22,51 +22,6 @@ async def root():
     """Root endpoint to check if API is running"""
     return {"message": "Email Classification API is running", "version": "1.0.0"}
 
-@router.get("/health", response_model=HealthCheckResponse, tags=["Status"])
-async def health_check(classification_service: ClassificationService = Depends(lambda: ClassificationService)):
-    """Health check endpoint"""
-    # Get API key usage information
-    api_usage = classification_service.llm_handler.api_manager.get_usage_info()
-    
-    # Format API key usage info
-    api_keys_info = []
-    for service, keys in api_usage.items():
-        for key_masked, data in keys.items():
-            expires_in = None
-            if data['expiry'] is not None:
-                expires_in = max(0, int(data['expiry'] - time.time()))
-                
-            api_keys_info.append(ApiKeyUsageInfo(
-                service=service,
-                key_masked=key_masked,
-                count=data['count'],
-                limit=data['limit'],
-                period_minutes=data['period'],
-                expires_in_seconds=expires_in
-            ))
-    
-    # Determine overall health status
-    overall_status = HealthStatus.OK
-    
-    # Check API key usage
-    for api_key in api_keys_info:
-        if api_key.count >= api_key.limit:
-            overall_status = HealthStatus.DEGRADED
-            break
-    
-    # Return health check response
-    return HealthCheckResponse(
-        status=overall_status,
-        version="1.0.0",
-        api_keys=api_keys_info,
-        components={
-            "classification": HealthStatus.OK,
-            "extraction": HealthStatus.OK,
-            "duplicate_detection": HealthStatus.OK
-        },
-        uptime_seconds=int(time.time())
-    )
-
 @router.post("/classify-email-chain", response_model=ClassificationResponse, tags=["Classification"])
 async def classify_email_chain(
     email_chain_file: UploadFile = File(...),
