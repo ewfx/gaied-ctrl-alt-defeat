@@ -41,7 +41,7 @@ export default function RootLayout({
         >
           <main>
             <ClientLayout>
-              {children}
+              {children} 
             </ClientLayout>
           </main>
         </ThemeProvider>
