@@ -16,6 +16,32 @@ router = APIRouter()
 # Get settings
 settings = get_settings()
 
+# Create a function to get a ClassificationService instance
+def get_classification_service():
+    # Import dependencies here to avoid circular imports
+    from app.core.llm_handler import LLMHandler
+    from app.core.api_manager import ApiManager
+    from app.services.email_processor import EmailProcessor
+    from app.services.duplicate_detector import DuplicateDetector
+    from app.services.data_extractor import DataExtractor
+    
+    # Get request types and extraction rules from your config or elsewhere
+    # This is just an example - replace with your actual implementation
+    request_types = []  # Replace with actual request types
+    extraction_rules = {}  # Replace with actual extraction rules
+    api_manager = ApiManager()
+    llm_handler = LLMHandler(api_manager=api_manager)
+    
+    # Create and return an instance
+    return ClassificationService(
+        llm_handler=llm_handler,
+        email_processor=EmailProcessor(),
+        duplicate_detector=DuplicateDetector(),
+        data_extractor=DataExtractor(llm_handler=llm_handler),
+        request_types=request_types,
+        extraction_rules=extraction_rules
+    )
+
 
 @router.get("/", tags=["Status"])
 async def root():
@@ -25,10 +51,9 @@ async def root():
 @router.post("/classify-email-chain", response_model=ClassificationResponse, tags=["Classification"])
 async def classify_email_chain(
     email_chain_file: UploadFile = File(...),
-
     attachments: List[UploadFile] = File(None),
     thread_id: Optional[str] = Form(None),
-    classification_service: ClassificationService = Depends(lambda: ClassificationService)
+    classification_service: ClassificationService = Depends(get_classification_service)
 ):
     """
     Classify an email chain from a PDF file along with separate attachments.
@@ -86,7 +111,7 @@ async def classify_email_chain(
 async def classify_eml(
     eml_file: UploadFile = File(...),
     thread_id: Optional[str] = Form(None),
-    classification_service: ClassificationService = Depends(lambda: ClassificationService)
+    classification_service: ClassificationService = Depends(get_classification_service)
 ):
     """
     Classify an email from an EML file.

@@ -333,24 +333,54 @@ class ClassificationService:
                 
             except json.JSONDecodeError as e:
                 logger.error(f"Error parsing LLM response: {str(e)}")
-                logger.debug(f"Raw response: {response_content}")
+                logger.debug(f"Raw response: {str(response_content)}")
                 
                 # Try to fix JSON with OutputFixingParser
                 from langchain.output_parsers import OutputFixingParser
-                fixing_parser = OutputFixingParser.from_llm(llm=llm)
+                from langchain_core.output_parsers import JsonOutputParser
+
+                
+                # Create a JsonOutputParser first as the base parser
+                base_parser = JsonOutputParser()
+                
+                # Then create the OutputFixingParser with both the LLM and the base parser
+                fixing_parser = OutputFixingParser.from_llm(
+                    llm=llm,
+                    parser=base_parser
+                )
                 
                 try:
+                    # Check if the response is empty
+                    if not response_content.strip():
+                        logger.error("Empty response from LLM")
+                        return []
+                        
+                    # Try to fix and parse the JSON
                     fixed_json = fixing_parser.parse(response_content)
                     result_types = []
                     
+                    # Validate the fixed JSON
+                    if not isinstance(fixed_json, list):
+                        logger.error(f"Fixed JSON is not a list: {fixed_json}")
+                        return []
+                    
                     for item in fixed_json:
-                        result_types.append(RequestTypeResult(
-                            request_type=item["request_type"],
-                            sub_request_type=item["sub_request_type"],
-                            confidence=float(item["confidence"]),
-                            reasoning=item["reasoning"],
-                            is_primary=bool(item.get("is_primary", False))
-                        ))
+                        # Ensure all required fields are present
+                        if not all(k in item for k in ["request_type", "sub_request_type", "confidence", "reasoning"]):
+                            logger.warning(f"Skipping item missing required fields: {item}")
+                            continue
+                            
+                        try:
+                            result_types.append(RequestTypeResult(
+                                request_type=item["request_type"],
+                                sub_request_type=item["sub_request_type"],
+                                confidence=float(item["confidence"]),
+                                reasoning=item["reasoning"],
+                                is_primary=bool(item.get("is_primary", False))
+                            ))
+                        except (ValueError, TypeError) as e:
+                            logger.warning(f"Error converting item to RequestTypeResult: {str(e)}")
+                            continue
                     
                     # Ensure one primary request type
                     if not any(r.is_primary for r in result_types) and result_types:
@@ -361,6 +391,7 @@ class ClassificationService:
                     
                 except Exception as e2:
                     logger.error(f"Error fixing JSON: {str(e2)}")
+                    # Return an empty list as a fallback
                     return []
                 
         except Exception as e:
