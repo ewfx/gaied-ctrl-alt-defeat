@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, status
 
 from ..models.request_types import RequestTypeModel
+from ..models.sub_request_types import SubRequestTypeModel
 from ..schemas.request_types import RequestTypeSchema
 
 router = APIRouter()
@@ -8,6 +9,13 @@ router = APIRouter()
 @router.post("/", response_description="Add new request type")
 async def create_request_type(request_type: RequestTypeSchema):
     new_request_type = await RequestTypeModel.create(request_type)
+    print("hi")
+    print(request_type)
+    if len(request_type.sub_request_types) > 0:
+        print("hi")
+        for subRequest in request_type.sub_request_types:
+            subreqResult = await SubRequestTypeModel.create(subRequest)
+            await RequestTypeModel.map_to_parent(subreqResult.id, new_request_type.id)
     return new_request_type
 
 @router.get("/", response_description="List all request types")
