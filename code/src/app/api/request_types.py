@@ -24,7 +24,7 @@ async def get_all_request_types():
         request_type["_id"] = str(request_type["_id"])
     return request_types
 
-@router.get("/request-types/{request_type_id}/subrequest-types", response_model=list)
+@router.get("/request-types/{request_type_id}/sub-request-types", response_model=list)
 async def get_all_subrequest_types(request_type_id: str):
     subrequest_types = await RequestTypeModel.get_all_subrequest_types(request_type_id)
     if subrequest_types is None:
@@ -45,21 +45,21 @@ async def delete_request_type(request_type_id: str):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Request type not found")
     return {"success": success}
 
-@router.post("/request-types/{request_type_id}/subrequest-types", response_model=dict)
+@router.post("/request-types/{request_type_id}/sub-request-types", response_model=dict)
 async def add_subrequest_type(request_type_id: str, subrequest_type_data: dict):
     success = await RequestTypeModel.add_subrequest_type(request_type_id, subrequest_type_data)
     if not success:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Request type not found")
     return {"success": success}
 
-@router.delete("/request-types/{request_type_id}/subrequest-types/{subrequest_type_id}", response_model=dict)
+@router.delete("/request-types/{request_type_id}/sub-request-types/{subrequest_type_id}", response_model=dict)
 async def remove_subrequest_type(request_type_id: str, subrequest_type_id: str):
     success = await RequestTypeModel.remove_subrequest_type(request_type_id, subrequest_type_id)
     if not success:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Request type or subrequest type not found")
     return {"success": success}
 
-@router.put("/request-types/{request_type_id}/subrequest-types/{subrequest_type_id}", response_model=dict)
+@router.put("/request-types/{request_type_id}/sub-request-types/{subrequest_type_id}", response_model=dict)
 async def update_subrequest_type(request_type_id: str, subrequest_type_id: str, update_data: dict):
     success = await RequestTypeModel.update_subrequest_type(request_type_id, subrequest_type_id, update_data)
     if not success:

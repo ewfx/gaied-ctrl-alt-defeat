@@ -19,13 +19,22 @@ import {
     CardHeader,
     CardTitle,
 } from "../ui/card";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle
+} from "../ui/dialog";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Separator } from "../ui/separator";
 import { Skeleton } from "../ui/skeleton";
+import { Textarea } from "../ui/textarea";
 
 export default function RequestTypeList() {
   type SubRequestType = {
-    id: string;
+    _id: string;
     name: string;
     definition: string;
     required_attributes: string[];
@@ -40,15 +49,20 @@ export default function RequestTypeList() {
   const [data, setData] = useState<RequestType[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedReq, setSelectedReq] = useState<RequestType | null>();
+  const [editReq, setEditReq] = useState<RequestType | null>(null);
+  const [editSubReq, setEditSubReq] = useState<SubRequestType | null>(null);
   const [deletePopOpen, setDeletePopOpen] = useState<boolean>(false);
   const [deleteSubPopOpen, setDeleteSubPopOpen] = useState<boolean>(false);
+  const [showReqTypeDialog, setShowReqTypeDialog] = useState<boolean>(false);
+  const [showSubReqTypeDialog, setShowSubReqTypeDialog] =
+    useState<boolean>(false);
 
   const router = useRouter();
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(backend_uri + "/reqtypes/");
+      const response = await axios.get(backend_uri + "/request-types/");
       setData(response.data);
       setLoading(false);
     } catch (error) {
@@ -60,19 +74,37 @@ export default function RequestTypeList() {
     fetchData();
   }, []);
 
+  const submitEditRequest = () => {
+    if (editReq) {
+        axios
+            .put(`${backend_uri}/request-types/${editReq._id}`, editReq)
+            .then(() => {
+                toast("Request type updated successfully");
+                setShowReqTypeDialog(false);
+                setSelectedReq(null)
+                fetchData();
+            })
+            .catch((error) => {
+                console.error("Error updating request type:", error);
+            });
+    }
+  }
+
   const handleSelect = (reqType: RequestType) => {
     setSelectedReq(reqType);
   };
 
-  const handleEditRequest = (reqId: string) => {
-    console.log("editreq", reqId);
+  const handleEditRequest = (requestType: RequestType) => {
+    setEditReq(requestType)
+    // console.log("editreq", reqId);
+    router.push("/editReq/"+requestType._id)
   };
 
   const handleDeleteRequest = (reqId: string) => {
     setDeletePopOpen(false);
     console.log("deletereq", reqId);
     axios
-      .delete(`${backend_uri}/reqtypes/${reqId}`)
+      .delete(`${backend_uri}/request-types/${reqId}`)
       .then(() => {
         toast("Deleted succesfully");
         setSelectedReq(null);
@@ -87,11 +119,13 @@ export default function RequestTypeList() {
     console.log("editsub", reqId);
   };
 
-  const handleDeleteSubRequest = (subreqId: string) => {
+  const handleDeleteSubRequest = (reqId: string, subreqId: string) => {
     setDeleteSubPopOpen(false);
     console.log("deletereq", subreqId);
     axios
-      .delete(`${backend_uri}/subreqtypes/${subreqId}`)
+      .delete(
+        `${backend_uri}/request-types/${reqId}/sub-request-types/${subreqId}`
+      )
       .then(() => {
         toast("Deleted succesfully");
         setSelectedReq(null);
@@ -129,7 +163,7 @@ export default function RequestTypeList() {
             <Button className="mt-4" onClick={handleAddRequest}>
               Add a new Request type
             </Button>
-            {!data.length ? (
+            {loading ? (
               <div className="flex flex-col space-y-3 mt-6">
                 <div className="space-y-6">
                   <Skeleton className="h-4 w-full" />
@@ -169,7 +203,7 @@ export default function RequestTypeList() {
                       variant={"outline"}
                       size={"default"}
                       className="mb-4"
-                      onClick={() => handleEditRequest(selectedReq._id)}
+                      onClick={() => handleEditRequest(selectedReq)}
                     >
                       <Pencil /> Edit
                     </Button>
@@ -234,62 +268,9 @@ export default function RequestTypeList() {
                   {selectedReq.sub_request_types.map((subReq, index) => {
                     return (
                       subReq.name && (
-                        <AccordionItem key={subReq.id} value={subReq.id}>
+                        <AccordionItem key={subReq._id} value={subReq._id}>
                           <AccordionTrigger>{subReq.name}</AccordionTrigger>
                           <AccordionContent className="border-l-1 pl-3">
-                            <div className="flex w-full items-center gap-4">
-                              <Button
-                                variant={"outline"}
-                                size={"sm"}
-                                className="mb-4"
-                                onClick={() => handleEditSubRequest(subReq.id)}
-                              >
-                                <Pencil /> Edit
-                              </Button>
-                              <Popover
-                                open={deleteSubPopOpen}
-                                onOpenChange={(e) => setDeleteSubPopOpen(e)}
-                              >
-                                <PopoverTrigger asChild>
-                                  <Button
-                                    variant={"destructive"}
-                                    size={"default"}
-                                    className="mb-4"
-                                  >
-                                    <Trash /> Delete
-                                  </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-80">
-                                  <div className="flex flex-col items-center">
-                                    <p>
-                                      Are you sure you want to delete this
-                                      request type?
-                                    </p>
-                                    <div className="flex gap-2 mt-4">
-                                      <Button
-                                        variant={"destructive"}
-                                        size={"default"}
-                                        onClick={() =>
-                                          handleDeleteSubRequest(subReq.id)
-                                        }
-                                      >
-                                        Delete
-                                      </Button>
-
-                                      <Button
-                                        variant={"outline"}
-                                        size={"default"}
-                                        onClick={() =>
-                                          setDeleteSubPopOpen(false)
-                                        }
-                                      >
-                                        Cancel
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </PopoverContent>
-                              </Popover>
-                            </div>
                             <p>{subReq.definition}</p>
                             <p className="mt-2 font-bold">
                               Required attributes:
@@ -310,6 +291,159 @@ export default function RequestTypeList() {
           </div>
         </div>
       </CardContent>
+      <Dialog
+        open={showReqTypeDialog}
+        onOpenChange={(e) => setShowReqTypeDialog(e)}
+      >
+        <DialogContent className="max-h-80">
+          <DialogHeader>
+            <DialogTitle>Edit Request Type</DialogTitle>
+            <DialogContent>
+            <form>
+                <div className="grid w-full items-center gap-4">
+                    <div className="flex flex-col space-y-1.5">
+                        <Label htmlFor="name">Name</Label>
+                        <Input
+                            id="name"
+                            placeholder="Name of request type"
+                            value={editReq?.name || ""}
+                            onChange={(e) =>
+                                setEditReq({ ...editReq, name: e.target.value } as RequestType)
+                            }
+                        />
+                    </div>
+                    <div className="flex flex-col space-y-1.5">
+                        <Label htmlFor="definition">Definition</Label>
+                        <Textarea
+                            id="definition"
+                            placeholder="Definition of request type"
+                            value={editReq?.definition || ""}
+                            onChange={(e) =>
+                                setEditReq({ ...editReq, definition: e.target.value } as RequestType)
+                            }
+                        />
+                    </div>
+                    <Separator />
+                    <p>Sub request types</p>
+                    <div className="max-h-96">
+                    {editReq?.sub_request_types.map((subReq, index) => (
+                        <div key={index}>
+                            <div key={index} className="flex flex-col space-y-1.5">
+                                <Label htmlFor={`subName-${index}`}>Name</Label>
+                                <Input
+                                    id={`subName-${index}`}
+                                    placeholder="Name of sub request type"
+                                    value={subReq.name}
+                                    onChange={(e) => {
+                                        const newSubRequests = [...editReq.sub_request_types];
+                                        newSubRequests[index] = {
+                                            ...newSubRequests[index],
+                                            name: e.target.value,
+                                        };
+                                        setEditReq({
+                                            ...editReq,
+                                            sub_request_types: newSubRequests,
+                                        } as RequestType);
+                                    }}
+                                />
+                                <Label htmlFor={`subDefinition-${index}`}>Definition</Label>
+                                <Textarea
+                                    id={`subDefinition-${index}`}
+                                    placeholder="Definition of sub request type"
+                                    value={subReq.definition}
+                                    onChange={(e) => {
+                                        const newSubRequests = [...editReq.sub_request_types];
+                                        newSubRequests[index] = {
+                                            ...newSubRequests[index],
+                                            definition: e.target.value,
+                                        };
+                                        setEditReq({
+                                            ...editReq,
+                                            sub_request_types: newSubRequests,
+                                        } as RequestType);
+                                    }}
+                                />
+                                <Label htmlFor={`attr-${index}`}>Required Attributes</Label>
+                                <Input
+                                    id={`attr-${index}`}
+                                    placeholder="Enter comma separated string"
+                                    value={subReq.required_attributes.join(", ")}
+                                    onChange={(e) => {
+                                        const newSubRequests = [...editReq.sub_request_types];
+                                        newSubRequests[index] = {
+                                            ...newSubRequests[index],
+                                            required_attributes: e.target.value
+                                                .split(",")
+                                                .map((attr) => attr.trim()),
+                                        };
+                                        setEditReq({
+                                            ...editReq,
+                                            sub_request_types: newSubRequests,
+                                        } as RequestType);
+                                    }}
+                                />
+                                <Button
+                                    variant="destructive"
+                                    onClick={(e) => {
+                                        e.preventDefault()
+                                        const newSubRequests = editReq.sub_request_types.filter(
+                                            (_, i) => i !== index
+                                        );
+                                        setEditReq({
+                                            ...editReq,
+                                            sub_request_types: newSubRequests,
+                                        } as RequestType);
+                                    }}
+                                >
+                                    Remove Sub Request Type
+                                </Button>
+                            </div>
+                            <Separator className="mt-4" />
+                        </div>
+                    ))}
+                    </div>
+                    <Button
+                        variant="outline"
+                        onClick={(e) => {
+                            e.preventDefault()
+                            const newSubRequests = [
+                                ...(editReq?.sub_request_types || []),
+                                { _id: "", name: "", definition: "", required_attributes: [] },
+                            ];
+                            setEditReq({
+                                ...editReq,
+                                sub_request_types: newSubRequests,
+                            } as RequestType);
+                        }}
+                    >
+                        Add Sub Request Type
+                    </Button>
+                </div>
+                <div className="flex justify-end gap-4 mt-4">
+                    <Button
+                        variant="outline"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            setShowReqTypeDialog(false)
+                        }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={(e) => {
+                            // Add your submit logic here
+                            e.preventDefault()
+                            submitEditRequest()
+                        }}
+                    >
+                        Save
+                    </Button>
+                </div>
+            </form>
+            </DialogContent>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

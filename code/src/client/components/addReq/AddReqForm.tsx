@@ -79,7 +79,7 @@ export default function AddReqForm() {
     setLoading(true);
 
     try {
-    const response = await axios.post(`${backend_uri}/reqtypes/`, {
+    const response = await axios.post(`${backend_uri}/request-types/`, {
       name,
       definition,
       sub_request_types: subRequests,

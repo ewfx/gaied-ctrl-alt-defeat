@@ -28,9 +28,9 @@ class RequestTypeModel:
 
     @staticmethod
     async def get_all_subrequest_types(request_type_id):
-        request_type = await request_type_collection.find_one({"_id": ObjectId(request_type_id)}, {"subrequest_types": 1})
-        if request_type and "subrequest_types" in request_type:
-            return request_type["subrequest_types"]
+        request_type = await request_type_collection.find_one({"_id": ObjectId(request_type_id)}, {"sub_request_types": 1})
+        if request_type and "sub_request_types" in request_type:
+            return request_type["sub_request_types"]
         return []
 
     @staticmethod
