@@ -1,46 +1,68 @@
 from fastapi import APIRouter, HTTPException, status
 
 from ..models.request_types import RequestTypeModel
-from ..schemas.request_types import RequestTypeSchema
+from ..schemas.request_types import RequestType
 
 router = APIRouter()
 
-@router.post("/", response_description="Add new request type")
-async def create_request_type(request_type: RequestTypeSchema):
-    new_request_type = await RequestTypeModel.create(request_type)
-    return new_request_type
+@router.post("/request-types", response_model=dict)
+async def create_request_type(request_type: RequestType):
+    request_type_id = await RequestTypeModel.create_request_type(request_type.dict())
+    return {"request_type_id": request_type_id}
 
-@router.get("/", response_description="List all request types")
-async def list_request_types():
-    request_types = await RequestTypeModel.get_all()
-    return request_types
-
-@router.get("/{id}", response_description="Get a single request type")
-async def get_request_type(id: str):
-    request_type = await RequestTypeModel.get_by_id(id)
-    if request_type is None:
+@router.get("/request-types/{request_type_id}", response_model=RequestType)
+async def get_request_type(request_type_id: str):
+    request_type = await RequestTypeModel.get_request_type(request_type_id)
+    if not request_type:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Request type not found")
     return request_type
 
-@router.put("/{id}", response_description="Update a request type")
-async def update_request_type(id: str, update_data: RequestTypeSchema):
-    update_result = await RequestTypeModel.update(id, update_data)
-    if not update_result:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Request type not found")
-    return {"message": "Request type updated successfully"}
+@router.get("/request-types", response_model=list)
+async def get_all_request_types():
+    request_types = await RequestTypeModel.get_all_request_types()
+    for request_type in request_types:
+        request_type["_id"] = str(request_type["_id"])
+    return request_types
 
-@router.delete("/{id}", response_description="Delete a request type")
-async def delete_request_type(id: str):
-    delete_result = await RequestTypeModel.delete(id)
-    if not delete_result:
+@router.get("/request-types/{request_type_id}/sub-request-types", response_model=list)
+async def get_all_subrequest_types(request_type_id: str):
+    subrequest_types = await RequestTypeModel.get_all_subrequest_types(request_type_id)
+    if subrequest_types is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Request type not found")
-    return {"message": "Request type deleted successfully"}
+    return subrequest_types
 
-@router.get("/{id}/subrequests", response_description="List all sub request types of a request type")
-async def list_sub_request_types(id: str):
-    request_type = await RequestTypeModel.get_by_id(id)
-    if request_type is None:
+@router.put("/request-types/{request_type_id}", response_model=dict)
+async def update_request_type(request_type_id: str, update_data: RequestType):
+    success = await RequestTypeModel.update_request_type(request_type_id, update_data.dict())
+    if not success:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Request type not found")
-    sub_request_types = await RequestTypeModel.get_sub_requests(id)
-    return sub_request_types
+    return {"success": success}
+
+@router.delete("/request-types/{request_type_id}", response_model=dict)
+async def delete_request_type(request_type_id: str):
+    success = await RequestTypeModel.delete_request_type(request_type_id)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Request type not found")
+    return {"success": success}
+
+@router.post("/request-types/{request_type_id}/sub-request-types", response_model=dict)
+async def add_subrequest_type(request_type_id: str, subrequest_type_data: dict):
+    success = await RequestTypeModel.add_subrequest_type(request_type_id, subrequest_type_data)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Request type not found")
+    return {"success": success}
+
+@router.delete("/request-types/{request_type_id}/sub-request-types/{subrequest_type_id}", response_model=dict)
+async def remove_subrequest_type(request_type_id: str, subrequest_type_id: str):
+    success = await RequestTypeModel.remove_subrequest_type(request_type_id, subrequest_type_id)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Request type or subrequest type not found")
+    return {"success": success}
+
+@router.put("/request-types/{request_type_id}/sub-request-types/{subrequest_type_id}", response_model=dict)
+async def update_subrequest_type(request_type_id: str, subrequest_type_id: str, update_data: dict):
+    success = await RequestTypeModel.update_subrequest_type(request_type_id, subrequest_type_id, update_data)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Request type or subrequest type not found")
+    return {"success": success}
 

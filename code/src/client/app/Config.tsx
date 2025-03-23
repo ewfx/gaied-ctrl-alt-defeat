@@ -1,0 +1,1 @@
+export const backend_uri = "http://localhost:8000"
