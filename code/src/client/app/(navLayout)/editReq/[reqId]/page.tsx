@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import axios from "axios";
 import { useParams, useRouter } from "next/navigation";
@@ -25,6 +26,7 @@ export default function EditReqType() {
   const [name, setName] = useState("");
   const [definition, setDefinition] = useState("");
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   type SubRequest = {
     name: string;
@@ -46,7 +48,7 @@ export default function EditReqType() {
         setSubRequests(sub_request_types);
       } catch (error) {
         console.error("Error fetching data", error);
-        toast("Error fetching data");
+        toast.error("Error fetching data");
       } finally {
         setLoading(false);
       }
@@ -93,11 +95,11 @@ export default function EditReqType() {
       )
     ) {
       console.error("All fields are required.");
-      toast("All fields are required.");
+      toast.warning("All fields are required.");
       return;
     }
 
-    setLoading(true);
+    setSubmitting(true);
 
     try {
       const response = await axios.put(
@@ -109,13 +111,12 @@ export default function EditReqType() {
         }
       );
       console.log("submit", response.data);
-      toast("Request type updated successfully.");
+      toast.success("Request type updated successfully.");
       router.push("/configure"); // Redirect to a success page or another route
     } catch (error) {
+      setSubmitting(false);
       console.error("Error submitting form", error);
-      toast("Error submitting form");
-    } finally {
-      setLoading(false);
+      toast.error("Error submitting form");
     }
   };
 
@@ -129,88 +130,115 @@ export default function EditReqType() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form>
-            <div className="grid w-full items-center gap-4">
-              <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  placeholder="Name of request type"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
+          {loading ? (
+            <div className="flex flex-col space-y-3 mt-6 mb-6">
+              <div className="space-y-6">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-[250px]" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-[200px]" />
+                <Skeleton className="h-4 w-[200px]" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-[300px]" />
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-[250px]" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-[200px]" />
+                <Skeleton className="h-4 w-[200px]" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-[300px]" />
+                <Skeleton className="h-4 w-1/2" />
               </div>
-              <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="definition">Definition</Label>
-                <Textarea
-                  id="definition"
-                  placeholder="Definition of request type"
-                  value={definition}
-                  onChange={(e) => setDefinition(e.target.value)}
-                />
-              </div>
-              <Separator />
-              <p>Sub request types</p>
-              {subRequests.map((subReq, index) => (
-                <div key={index}>
-                  <div key={index} className="flex flex-col space-y-1.5">
-                    <Label htmlFor={`subName-${index}`}>Name</Label>
-                    <Input
-                      id={`subName-${index}`}
-                      placeholder="Name of sub request type"
-                      value={subReq.name}
-                      onChange={(e) =>
-                        handleSubRequestChange(index, "name", e.target.value)
-                      }
-                    />
-                    <Label htmlFor={`subDefinition-${index}`}>Definition</Label>
-                    <Textarea
-                      id={`subDefinition-${index}`}
-                      placeholder="Definition of sub request type"
-                      value={subReq.definition}
-                      onChange={(e) =>
-                        handleSubRequestChange(
-                          index,
-                          "definition",
-                          e.target.value
-                        )
-                      }
-                    />
-                    <Label htmlFor={`attr-${index}`}>Required Attributes</Label>
-                    <Input
-                      id={`attr-${index}`}
-                      placeholder="Enter comma separated string"
-                      value={subReq.required_attributes.join(", ")}
-                      onChange={(e) =>
-                        handleSubRequestChange(
-                          index,
-                          "required_attributes",
-                          e.target.value.split(",").map((attr) => attr.trim())
-                        )
-                      }
-                    />
-                    <Button
-                      variant="outline"
-                      onClick={(e) => removeSubRequest(index, e)}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                  <Separator className="mt-4" />
-                </div>
-              ))}
-              <Button variant="outline" onClick={addSubRequest}>
-                Add Sub Request Type
-              </Button>
             </div>
-          </form>
+          ) : (
+            <form>
+              <div className="grid w-full items-center gap-4">
+                <div className="flex flex-col space-y-1.5">
+                  <Label htmlFor="name">Name</Label>
+                  <Input
+                    id="name"
+                    placeholder="Name of request type"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col space-y-1.5">
+                  <Label htmlFor="definition">Definition</Label>
+                  <Textarea
+                    id="definition"
+                    placeholder="Definition of request type"
+                    value={definition}
+                    onChange={(e) => setDefinition(e.target.value)}
+                  />
+                </div>
+                <Separator />
+                <p className="text-lg">Sub-request types:</p>
+                {subRequests.map((subReq, index) => (
+                  <div key={index}>
+                    <div key={index} className="flex flex-col space-y-1.5">
+                      <Label htmlFor={`subName-${index}`}>Name</Label>
+                      <Input
+                        id={`subName-${index}`}
+                        placeholder="Name of sub request type"
+                        value={subReq.name}
+                        onChange={(e) =>
+                          handleSubRequestChange(index, "name", e.target.value)
+                        }
+                      />
+                      <Label htmlFor={`subDefinition-${index}`}>
+                        Definition
+                      </Label>
+                      <Textarea
+                        id={`subDefinition-${index}`}
+                        placeholder="Definition of sub request type"
+                        value={subReq.definition}
+                        onChange={(e) =>
+                          handleSubRequestChange(
+                            index,
+                            "definition",
+                            e.target.value
+                          )
+                        }
+                      />
+                      <Label htmlFor={`attr-${index}`}>
+                        Required Attributes
+                      </Label>
+                      <Input
+                        id={`attr-${index}`}
+                        placeholder="Enter comma separated string"
+                        value={subReq.required_attributes.join(", ")}
+                        onChange={(e) =>
+                          handleSubRequestChange(
+                            index,
+                            "required_attributes",
+                            e.target.value.split(",").map((attr) => attr.trim())
+                          )
+                        }
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={(e) => removeSubRequest(index, e)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                    <Separator className="mt-8" />
+                  </div>
+                ))}
+                <Button variant="outline" onClick={addSubRequest}>
+                  Add Sub Request Type
+                </Button>
+              </div>
+            </form>
+          )}
         </CardContent>
         <CardFooter className="flex gap-6">
           <Button variant="outline" onClick={() => router.back()}>
             Go back
           </Button>
-          <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? <LoadingSpinner /> : "Submit"}
+          <Button onClick={handleSubmit} disabled={submitting}>
+            {submitting ? <LoadingSpinner /> : "Submit"}
           </Button>
         </CardFooter>
       </Card>

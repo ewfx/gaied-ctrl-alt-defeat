@@ -19,7 +19,7 @@ export default function EmlCard() {
 
   const submitFiles = () => {
     if (!emlFile) {
-      toast("Upload a file!");
+      toast.error("Upload a file!");
       return;
     }
     const formData = new FormData();
@@ -28,11 +28,11 @@ export default function EmlCard() {
     axios
       .post(backend_uri + "/classify-eml", formData)
       .then((response) => {
-        toast("File submitted successfully!");
+        toast.success("File submitted successfully!");
         console.log("Success:", response.data);
       })
       .catch((error) => {
-        toast("File submission failed!");
+        toast.success("File submission failed!");
         console.error("Error:", error);
       });
   };
@@ -54,7 +54,7 @@ export default function EmlCard() {
               variant="destructive"
               onClick={() => {
                 setEmlFile(null);
-                toast("File removed");
+                toast.warning("File removed");
               }}
             >
               Delete
@@ -65,7 +65,7 @@ export default function EmlCard() {
             onDrop={(acceptedFiles) => setEmlFile(acceptedFiles[0] as File)}
             multiple={false}
             accept={{ "message/rfc822": [] }}
-            onDropRejected={() => toast("Unsupported file type!")}
+            onDropRejected={() => toast.error("Unsupported file type!")}
           >
             {({ getRootProps, getInputProps, isDragActive }) => (
               <section>

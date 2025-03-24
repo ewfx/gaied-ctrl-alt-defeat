@@ -25,21 +25,21 @@ export default function RootLayout({
           </div>
           <h1 className="text-xl font-bold pl-4">Email Classifier</h1>
         </Link>
-        <div className="flex items-center justify-center">
-          <Link href="/configure">
-            <Button variant="ghost" size="default" className="mr-4">
-              Configure{" "}
-            </Button>
-          </Link>
-          <Separator orientation="vertical" />
+        <div className="flex items-center justify-center h-[36px]">
           <Link href="/classify">
-            <Button variant="ghost" size="default" className="mr-4">
+            <Button variant="link" size="default" className="ml-2 mr-2">
               Classify{" "}
             </Button>
           </Link>
           <Separator orientation="vertical" />
+          <Link href="/configure">
+            <Button variant="link" size="default" className="ml-2 mr-2">
+              Configure{" "}
+            </Button>
+          </Link>
+          <Separator orientation="vertical" />
           <Link href="/analytics">
-            <Button variant="ghost" size="default" className="mr-4">
+            <Button variant="link" size="default" className="ml-2 mr-2">
               Analytics{" "}
             </Button>
           </Link>

@@ -72,7 +72,7 @@ export default function AddReqForm() {
       )
     ) {
       console.error("All fields are required.");
-      toast("All fields are required.");
+      toast.error("All fields are required.");
       return;
     }
 
@@ -85,11 +85,11 @@ export default function AddReqForm() {
       sub_request_types: subRequests,
     });
       console.log("submit", response.data);
-      toast("Request type created successfully.");
+      toast.success("Request type created successfully.");
       router.push("/configure"); // Redirect to a success page or another route
     } catch (error) {
       console.error("Error submitting form", error);
-      toast("Error submitting form");
+      toast.error("Error submitting form");
     } finally {
       setLoading(false);
     }

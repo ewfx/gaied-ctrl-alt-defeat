@@ -23,7 +23,7 @@ export default function EmailPdfCard() {
     console.log(emailPdf);
     console.log(attachments);
     if (!emailPdf) {
-      toast("Upload an email file");
+      toast.error("Upload an email file");
       return;
     }
     const formData = new FormData();
@@ -42,11 +42,11 @@ export default function EmailPdfCard() {
       })
       .then((response) => {
         console.log("Success:", response.data);
-        toast("Files submitted successfully");
+        toast.success("Files submitted successfully");
       })
       .catch((error) => {
         console.error("Error:", error);
-        toast("Failed to submit files");
+        toast.error("Failed to submit files");
       });
   };
 
@@ -67,7 +67,7 @@ export default function EmailPdfCard() {
               variant="destructive"
               onClick={() => {
                 setEmailPdf(null);
-                toast("File removed");
+                toast.warning("File removed");
               }}
             >
               Delete
@@ -78,7 +78,7 @@ export default function EmailPdfCard() {
             onDrop={(acceptedFiles) => setEmailPdf(acceptedFiles[0] as File)}
             multiple={false}
             accept={{ "application/pdf": [] }}
-            onDropRejected={() => toast("Unsupported file type!")}
+            onDropRejected={() => toast.error("Unsupported file type!")}
           >
             {({ getRootProps, getInputProps, isDragActive }) => (
               <section>
@@ -107,7 +107,7 @@ export default function EmailPdfCard() {
         <Dropzone
           onDrop={(acceptedFiles) => {
             setAttachments((prev) => [...prev, ...acceptedFiles]);
-            if (acceptedFiles.length > 0) toast("Attachments uploaded");
+            if (acceptedFiles.length > 0) toast.success("Attachments uploaded");
           }}
         >
           {({ getRootProps, getInputProps, isDragActive }) => (
@@ -135,7 +135,7 @@ export default function EmailPdfCard() {
         </Dropzone>
         {attachments.length > 0 && (
           <div className="mt-4 space-y-2">
-            <div className="text-muted-foreground">Selected files:</div>
+            <div className="text-muted-foreground">Selected attachments:</div>
             {attachments.map((file, index) => (
               <div
                 key={index}
@@ -156,7 +156,7 @@ export default function EmailPdfCard() {
                         setAttachments((prev) =>
                           prev.filter((_, i) => i !== index)
                         );
-                        toast("File removed");
+                        toast.warning("File removed");
                       }}
                     >
                       Delete
@@ -175,7 +175,7 @@ export default function EmailPdfCard() {
           onClick={() => {
             setEmailPdf(null);
             setAttachments([]);
-            toast("All files cleared");
+            toast.warning("All files cleared");
           }}
         >
           Clear Files

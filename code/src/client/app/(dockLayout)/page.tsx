@@ -8,13 +8,6 @@ import { useState } from "react";
 export default function Home() {
   const [showStuff, setShowStuff] = useState(false);
 
-  // useEffect(() => {
-  //   const timer = setTimeout(() => {
-  //     setShowStuff(true);
-  //   }, 3000); // Show the link after 3 seconds
-
-  //   return () => clearTimeout(timer);
-  // }, []);
   const handleAnimationComplete = () => {
     setShowStuff(true);
     return;
@@ -22,13 +15,6 @@ export default function Home() {
   return (
     <div className="relative min-h-screen">
       <div className="absolute inset-0 w-full h-full">
-        {/* <Squares
-          speed={0.5}
-          squareSize={40}
-          direction="diagonal" // up, down, left, right, diagonal
-          borderColor="rgba(255,255,255,0.1)"
-          hoverFillColor="#222"
-        /> */}
         <Waves
           lineColor="rgba(255,255,255,0.12)"
           backgroundColor="black"
@@ -50,7 +36,7 @@ export default function Home() {
           animateBy="words"
           direction="top"
           onAnimationComplete={handleAnimationComplete}
-          className="text-2xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black mb-8"
+          className="text-white text-2xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black mb-8"
           animationFrom={undefined}
           animationTo={undefined}
         />
@@ -60,7 +46,7 @@ export default function Home() {
           animateBy="words"
           direction="top"
           onAnimationComplete={handleAnimationComplete}
-          className="text-xs sm:text-xl md:text-2xl lg:text-3xl xl:text-3xl font-mono mb-8"
+          className="text-white text-xs sm:text-xl md:text-2xl lg:text-3xl xl:text-3xl font-mono mb-8"
           animationFrom={undefined}
           animationTo={undefined}
         />
@@ -68,7 +54,7 @@ export default function Home() {
           href={"https://github.com/ewfx/gaied-ctrl-alt-defeat/"}
           target="_blank"
           className={
-            "flex gap-4 underline w-fit transition-opacity duration-500 delay-200 " +
+            "text-white flex gap-4 underline w-fit transition-opacity duration-500 delay-200 " +
             (showStuff ? "opacity-100" : "opacity-0")
           }
           id="fadeLink"

@@ -12,22 +12,22 @@ export default function DockLayoutComponent({
 
   const items = [
     {
-      icon: <Home size={30} />,
+      icon: <Home size={30} color="white" />,
       label: "Home",
       onClick: () => router.push("/"),
     },
     {
-      icon: <Upload size={30} />,
+      icon: <Upload size={30} color="white" />,
       label: "Upload",
       onClick: () => router.push("/classify"),
     },
     {
-      icon: <ChartArea size={30} />,
+      icon: <ChartArea size={30} color="white" />,
       label: "Analytics",
       onClick: () => router.push("/analytics"),
     },
     {
-      icon: <Wrench size={30} />,
+      icon: <Wrench size={30} color="white" />,
       label: "Configure",
       onClick: () => router.push("/configure"),
     },
