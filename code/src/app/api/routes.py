@@ -25,21 +25,19 @@ def get_classification_service():
     from app.services.duplicate_detector import DuplicateDetector
     from app.services.data_extractor import DataExtractor
     
-    # Get request types and extraction rules from your config or elsewhere
-    # This is just an example - replace with your actual implementation
-    request_types = []  # Replace with actual request types
-    extraction_rules = {}  # Replace with actual extraction rules
+    # Create service dependencies
     api_manager = ApiManager()
     llm_handler = LLMHandler(api_manager=api_manager)
+    email_processor = EmailProcessor(max_attachment_size_mb=settings.max_attachment_size_mb)
+    duplicate_detector = DuplicateDetector(cache_duration_days=settings.duplicate_cache_days)
+    data_extractor = DataExtractor(llm_handler=llm_handler)
     
-    # Create and return an instance
+    # Create and return a ClassificationService instance
     return ClassificationService(
         llm_handler=llm_handler,
-        email_processor=EmailProcessor(),
-        duplicate_detector=DuplicateDetector(),
-        data_extractor=DataExtractor(llm_handler=llm_handler),
-        request_types=request_types,
-        extraction_rules=extraction_rules
+        email_processor=email_processor,
+        duplicate_detector=duplicate_detector,
+        data_extractor=data_extractor
     )
 
 

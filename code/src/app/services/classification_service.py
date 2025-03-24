@@ -8,6 +8,7 @@ from app.services.email_processor import EmailProcessor
 from app.services.duplicate_detector import DuplicateDetector
 from app.services.data_extractor import DataExtractor
 from app.models.response_models import ClassificationResponse, RequestTypeResult
+from app.schemas.request_types import request_type_collection
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +21,7 @@ class ClassificationService:
                 llm_handler: LLMHandler,
                 email_processor: EmailProcessor,
                 duplicate_detector: DuplicateDetector,
-                data_extractor: DataExtractor,
-                request_types: List[Dict[str, Any]],
-                extraction_rules: Dict[str, Any]):
+                data_extractor: DataExtractor):
         """
         Initialize the classification service
         """
@@ -30,8 +29,6 @@ class ClassificationService:
         self.email_processor = email_processor
         self.duplicate_detector = duplicate_detector
         self.data_extractor = data_extractor
-        self.request_types = request_types
-        self.extraction_rules = extraction_rules
         logger.info("Classification service initialized")
     
     async def process_email_chain(self,
@@ -76,13 +73,17 @@ class ClassificationService:
                     processing_time_ms=(time.time() - start_time) * 1000
                 )
             
+            # Get request types from MongoDB
+            request_types = await self._get_request_types_from_db()
+            
             # Identify request types
             request_type_results = await self._identify_request_types(
                 processed_email,
                 processed_attachments,
                 sender,
                 subject,
-                received_date
+                received_date,
+                request_types
             )
             
             # Extract fields based on identified request types
@@ -95,12 +96,18 @@ class ClassificationService:
                 )
                 
                 if primary_request:
+                    # Get required attributes for the sub-request type
+                    required_attributes = await self._get_required_attributes(
+                        primary_request.request_type,
+                        primary_request.sub_request_type
+                    )
+                    
                     extracted_fields = await self.data_extractor.extract_fields(
                         processed_email,
                         processed_attachments,
                         primary_request.request_type,
                         primary_request.sub_request_type,
-                        self.extraction_rules
+                        required_attributes
                     )
             
             processing_time = (time.time() - start_time) * 1000
@@ -161,13 +168,17 @@ class ClassificationService:
                     processing_time_ms=(time.time() - start_time) * 1000
                 )
             
+            # Get request types from MongoDB
+            request_types = await self._get_request_types_from_db()
+            
             # Identify request types
             request_type_results = await self._identify_request_types(
                 processed_email,
                 processed_attachments,
                 sender,
                 subject,
-                received_date
+                received_date,
+                request_types
             )
             
             # Extract fields based on identified request types
@@ -180,12 +191,18 @@ class ClassificationService:
                 )
                 
                 if primary_request:
+                    # Get required attributes for the sub-request type
+                    required_attributes = await self._get_required_attributes(
+                        primary_request.request_type,
+                        primary_request.sub_request_type
+                    )
+                    
                     extracted_fields = await self.data_extractor.extract_fields(
                         processed_email,
                         processed_attachments,
                         primary_request.request_type,
                         primary_request.sub_request_type,
-                        self.extraction_rules
+                        required_attributes
                     )
             
             processing_time = (time.time() - start_time) * 1000
@@ -211,13 +228,55 @@ class ClassificationService:
                 processing_time_ms=processing_time,
                 error=f"Error processing EML: {str(e)}"
             )
+    
+    async def _get_request_types_from_db(self) -> List[Dict[str, Any]]:
+        """
+        Get request types from MongoDB
+        """
+        try:
+            # Fetch all request types from the database
+            request_types = await request_type_collection.find().to_list(length=None)
+            
+            # Convert database ObjectIds to strings for JSON serialization
+            for request_type in request_types:
+                request_type["_id"] = str(request_type["_id"])
+            
+            return request_types
+        except Exception as e:
+            logger.error(f"Error retrieving request types from database: {str(e)}")
+            return []
+    
+    async def _get_required_attributes(self, request_type_name: str, sub_request_type_name: str) -> List[str]:
+        """
+        Get required attributes for a specific request type and sub-request type
+        """
+        try:
+            # Find request type by name
+            request_type = await request_type_collection.find_one({"name": request_type_name})
+            
+            if not request_type:
+                logger.warning(f"Request type not found: {request_type_name}")
+                return []
+            
+            # Find sub-request type
+            for sub_type in request_type.get("sub_request_types", []):
+                if sub_type.get("name") == sub_request_type_name:
+                    return sub_type.get("required_attributes", [])
+            
+            logger.warning(f"Sub-request type not found: {sub_request_type_name} in {request_type_name}")
+            return []
+            
+        except Exception as e:
+            logger.error(f"Error retrieving required attributes: {str(e)}")
+            return []
             
     async def _identify_request_types(self,
                                     email_content: str,
                                     attachments: List[Dict[str, str]],
                                     sender: str,
                                     subject: str,
-                                    received_date: str) -> List[RequestTypeResult]:
+                                    received_date: str,
+                                    request_types: List[Dict[str, Any]]) -> List[RequestTypeResult]:
         """
         Identify request types from email content and attachments
         
@@ -227,13 +286,23 @@ class ClassificationService:
             sender: Email sender
             subject: Email subject
             received_date: Email received date
+            request_types: List of available request types from MongoDB
             
         Returns:
             List of request type results
         """
         try:
-            # Format request types for prompt
-            request_types_str = json.dumps(self.request_types, indent=2)
+            # Format request types for prompt (simplify for LLM)
+            formatted_request_types = []
+            for rt in request_types:
+                sub_types = [st.get("name") for st in rt.get("sub_request_types", [])]
+                formatted_request_types.append({
+                    "request_type": rt.get("name"),
+                    "definition": rt.get("definition", ""),
+                    "sub_request_types": sub_types
+                })
+                
+            request_types_str = json.dumps(formatted_request_types, indent=2)
             
             # Format attachments for prompt
             attachments_str = ""
@@ -265,7 +334,7 @@ class ClassificationService:
                     ]
 
                     RULES:
-                    - Prioritize the email content over attachments for determining request type
+                    - IMPORTANT: Prioritize the email content over attachments for determining request type and sub request type
                     - The primary request should represent the sender's main intent
                     - Provide confidence scores between 0 and 1 (higher = more confident)
                     - Include detailed reasoning for each classification
@@ -286,6 +355,7 @@ class ClassificationService:
                 {attachments_str}
 
                 Based on the above email content and attachments, identify all request types and sub-request types.
+                Remember to prioritize email content over attachments when determining request type and sub request type.
                 """
             
             # Get LLM for classification
