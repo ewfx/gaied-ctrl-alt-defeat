@@ -30,27 +30,23 @@ class DataExtractor:
                            attachments: List[Dict[str, str]],
                            request_type: str,
                            sub_request_type: str,
-                           extraction_rules: Dict[str, Any]) -> List[ExtractedField]:
+                           required_attributes: List[str]) -> List[ExtractedField]:
         """
-        Extract fields from email content based on request type
+        Extract fields from email content based on request type and required attributes
         
         Args:
             email_content: Processed email content
             attachments: List of processed attachments
             request_type: Identified request type
             sub_request_type: Identified sub-request type
-            extraction_rules: Dictionary of extraction rules by request type
+            required_attributes: List of required attributes to extract for this sub-request type
             
         Returns:
             List of extracted fields
         """
         try:
-            # Get extraction rules for the request type
-            rules = extraction_rules.get(request_type, extraction_rules.get("default", {}))
-            
-            # Get priority sources and fields to extract
-            priority_sources = rules.get("priority_sources", ["email_body", "attachment"])
-            fields_to_extract = rules.get("fields", [])
+            # For field extraction, prioritize attachments over email_body
+            priority_sources = ["attachment", "email_body"]
             
             # Format attachments for prompt
             attachments_str = ""
@@ -71,24 +67,25 @@ class DataExtractor:
                     "field_name": "amount",
                     "value": 50000,
                     "confidence": 0.98,
-                    "source": "email_body"
+                    "source": "attachment_1"
                 }},
                 ...
                 ]
 
                 FIELDS TO EXTRACT:
-                {json.dumps(fields_to_extract, indent=2)}
+                {json.dumps(required_attributes, indent=2)}
 
                 PRIORITY SOURCES (in order of preference):
                 {json.dumps(priority_sources, indent=2)}
 
                 RULES:
+                - IMPORTANT: For data extraction, prioritize attachments over email body (opposite of request type identification)
                 - Source should be "email_body" or "attachment_1", "attachment_2", etc.
                 - Only extract fields you are confident about (provide confidence score 0-1)
                 - For numerical values, provide them as numbers not strings when appropriate
                 - Format dates in ISO format (YYYY-MM-DD) when possible
                 - Look for specific evidence within the text to support your extraction
-                - Prefer sources in the priority order provided above
+                - Prefer sources in the priority order provided above (attachments first, then email body)
                 - Don't include fields where you couldn't find any relevant information (confidence < 0.5)
                 - If the same field is found in multiple sources, choose the highest priority source
                 """
@@ -101,6 +98,7 @@ class DataExtractor:
                 {attachments_str}
 
                 Based on the above email content and attachments, extract all relevant fields.
+                Remember to prioritize attachments over email body when extracting data.
                 """
             
             # Get LLM for data extraction

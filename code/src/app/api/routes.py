@@ -25,21 +25,19 @@ def get_classification_service():
     from app.services.duplicate_detector import DuplicateDetector
     from app.services.data_extractor import DataExtractor
     
-    # Get request types and extraction rules from your config or elsewhere
-    # This is just an example - replace with your actual implementation
-    request_types = []  # Replace with actual request types
-    extraction_rules = {}  # Replace with actual extraction rules
+    # Create service dependencies
     api_manager = ApiManager()
     llm_handler = LLMHandler(api_manager=api_manager)
+    email_processor = EmailProcessor(max_attachment_size_mb=settings.max_attachment_size_mb)
+    duplicate_detector = DuplicateDetector(cache_duration_days=settings.duplicate_cache_days)
+    data_extractor = DataExtractor(llm_handler=llm_handler)
     
-    # Create and return an instance
+    # Create and return a ClassificationService instance
     return ClassificationService(
         llm_handler=llm_handler,
-        email_processor=EmailProcessor(),
-        duplicate_detector=DuplicateDetector(),
-        data_extractor=DataExtractor(llm_handler=llm_handler),
-        request_types=request_types,
-        extraction_rules=extraction_rules
+        email_processor=email_processor,
+        duplicate_detector=duplicate_detector,
+        data_extractor=data_extractor
     )
 
 
@@ -66,33 +64,18 @@ async def classify_email_chain(
         # Read and process the email chain file
         email_chain_content = await email_chain_file.read()
         
-        # Check file size
-        if len(email_chain_content) > settings.max_attachment_size_mb * 1024 * 1024:
-            raise HTTPException(
-                status_code=413, 
-                detail=f"Email chain file exceeds maximum size of {settings.max_attachment_size_mb}MB"
-            )
-        
         # Process attachments if any
         processed_attachments = []
         if attachments:
             for attachment in attachments:
                 content = await attachment.read()
-                
-                # Check file size
-                if len(content) > settings.max_attachment_size_mb * 1024 * 1024:
-                    raise HTTPException(
-                        status_code=413, 
-                        detail=f"Attachment {attachment.filename} exceeds maximum size of {settings.max_attachment_size_mb}MB"
-                    )
-                
                 processed_attachments.append({
                     "filename": attachment.filename,
                     "content_type": attachment.content_type,
                     "content": content
                 })
         
-        # Process the email chain
+        # Process the email chain - file size check moved to the service layer
         result = await classification_service.process_email_chain(
             email_chain_file=email_chain_content,
             email_chain_filename=email_chain_file.filename,
@@ -123,14 +106,7 @@ async def classify_eml(
         # Read and process the EML file
         eml_content = await eml_file.read()
         
-        # Check file size
-        if len(eml_content) > settings.max_attachment_size_mb * 1024 * 1024:
-            raise HTTPException(
-                status_code=413, 
-                detail=f"EML file exceeds maximum size of {settings.max_attachment_size_mb}MB"
-            )
-        
-        # Process the EML file
+        # Process the EML file - file size check moved to the service layer
         result = await classification_service.process_eml(
             eml_content=eml_content,
             thread_id=thread_id

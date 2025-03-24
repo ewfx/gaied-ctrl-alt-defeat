@@ -1,19 +1,12 @@
 import logging
-import os
-from contextlib import asynccontextmanager
+import uvicorn
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 
 from app.api.routes import router
-from app.config import get_extraction_rules, get_request_types, get_settings
-from app.core.api_manager import ApiManager
-from app.core.llm_handler import LLMHandler
-from app.services.classification_service import ClassificationService
-from app.services.data_extractor import DataExtractor
-from app.services.duplicate_detector import DuplicateDetector
-from app.services.email_processor import EmailProcessor
+from app.config import get_settings
 
 from .api import router as request_config_router
 from .db.session import close_db, init_db
@@ -44,31 +37,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load data
-request_types = get_request_types()
-extraction_rules = get_extraction_rules()
-
-# Initialize services
-api_manager = ApiManager()
-llm_handler = LLMHandler(api_manager=api_manager)
-email_processor = EmailProcessor(max_attachment_size_mb=settings.max_attachment_size_mb)
-duplicate_detector = DuplicateDetector(cache_duration_days=settings.duplicate_cache_days)
-data_extractor = DataExtractor(llm_handler=llm_handler)
-
-# Create classification service dependency
-def get_classification_service():
-    return ClassificationService(
-        llm_handler=llm_handler,
-        email_processor=email_processor,
-        duplicate_detector=duplicate_detector,
-        data_extractor=data_extractor,
-        request_types=request_types,
-        extraction_rules=extraction_rules
-    )
-
-# Add dependency to app state
-app.state.classification_service = get_classification_service()
-
 # Include routes
 app.include_router(router)
 app.include_router(request_config_router)
@@ -96,18 +64,8 @@ async def startup_event():
     logger.info("Starting up Email Classification API")
     await init_db()
     # Log configuration
-    logger.info(f"Loaded {len(request_types)} request types")
-    logger.info(f"Loaded extraction rules for {len(extraction_rules)} request types")
     logger.info(f"Duplicate cache duration: {settings.duplicate_cache_days} days")
     logger.info(f"Max attachment size: {settings.max_attachment_size_mb} MB")
-    
-    # Test LLM connections
-    try:
-        service = app.state.classification_service
-        llm = service.llm_handler.get_llm("email_classification")
-        logger.info(f"Successfully initialized LLM: {llm.model}")
-    except Exception as e:
-        logger.error(f"Error initializing LLM: {str(e)}")
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -117,8 +75,6 @@ async def shutdown_event():
 
 
 if __name__ == "__main__":
-    import uvicorn
-
     # Start server
     uvicorn.run(
         "app.main:app", 
