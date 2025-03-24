@@ -2,6 +2,7 @@ import { backend_uri } from "@/app/Config";
 import { Label } from "@radix-ui/react-label";
 import axios from "axios";
 import { FileIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Dropzone from "react-dropzone";
 import { toast } from "sonner";
@@ -13,9 +14,18 @@ import {
   CardHeader,
   CardTitle,
 } from "../ui/card";
+import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
+import { LoadingSpinner } from "../ui/LoadingSpinner";
 
-export default function EmlCard() {
+interface EmlCardProps {
+  setChildLoading: (loading: boolean) => void;
+}
+
+export default function EmlCard({ setChildLoading }: EmlCardProps) {
   const [emlFile, setEmlFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const router = useRouter();
 
   const submitFiles = () => {
     if (!emlFile) {
@@ -25,15 +35,23 @@ export default function EmlCard() {
     const formData = new FormData();
     formData.append("eml_file", emlFile);
 
+    setChildLoading(true);
+    setIsSubmitting(true);
     axios
       .post(backend_uri + "/classify-eml", formData)
       .then((response) => {
         toast.success("File submitted successfully!");
         console.log("Success:", response.data);
+        localStorage.setItem("successData", JSON.stringify(response.data));
+        router.push("/classify/success");
       })
       .catch((error) => {
-        toast.success("File submission failed!");
+        toast.error("File submission failed!");
         console.error("Error:", error);
+      })
+      .finally(() => {
+        setChildLoading(false);
+        setIsSubmitting(false);
       });
   };
 
@@ -97,6 +115,15 @@ export default function EmlCard() {
           Submit Files
         </Button>
       </CardFooter>
+      <Dialog open={isSubmitting}>
+        <DialogContent>
+          <DialogTitle />
+          <div className="flex flex-col w-full h-full justify-center items-center">
+            <LoadingSpinner size={50} />
+            <p className="text-md">Submitting...</p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
