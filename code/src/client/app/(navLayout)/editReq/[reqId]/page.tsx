@@ -2,12 +2,12 @@
 import { backend_uri } from "@/app/Config";
 import { Button } from "@/components/ui/button";
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -205,7 +205,7 @@ export default function EditReqType() {
             </div>
           </form>
         </CardContent>
-        <CardFooter className="flex justify-between">
+        <CardFooter className="flex gap-6">
           <Button variant="outline" onClick={() => router.back()}>
             Go back
           </Button>

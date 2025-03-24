@@ -6,29 +6,36 @@ import { useState } from "react";
 import Dropzone from "react-dropzone";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "../ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
 
 export default function EmlCard() {
   const [emlFile, setEmlFile] = useState<File | null>(null);
 
   const submitFiles = () => {
-    if (!emlFile){
-        toast("Upload a file!")
-        return
+    if (!emlFile) {
+      toast("Upload a file!");
+      return;
     }
     const formData = new FormData();
     formData.append("eml_file", emlFile);
 
-    axios.post(backend_uri+"/classify-eml", formData)
-        .then((response) => {
-            toast("File submitted successfully!");
-            console.log("Success:", response.data);
-        })
-        .catch((error) => {
-            toast("File submission failed!");
-            console.error("Error:", error);
-        });
-  }
+    axios
+      .post(backend_uri + "/classify-eml", formData)
+      .then((response) => {
+        toast("File submitted successfully!");
+        console.log("Success:", response.data);
+      })
+      .catch((error) => {
+        toast("File submission failed!");
+        console.error("Error:", error);
+      });
+  };
 
   return (
     <Card className="h-fit">
@@ -62,13 +69,13 @@ export default function EmlCard() {
           >
             {({ getRootProps, getInputProps, isDragActive }) => (
               <section>
-                <Label htmlFor="email-pdf" className="text-sm font-medium">
+                <Label htmlFor="email-pdf" className="text-lg font-medium">
                   Upload EML file
                 </Label>
                 <div
                   {...getRootProps()}
-                  className={`border-2 border-dashed border-gray-200 rounded-lg flex flex-col gap-1 p-6 items-center ${
-                    isDragActive ? "border-blue-500" : "border-gray-300"
+                  className={`border-3 border-dashed rounded-lg flex flex-col gap-1 m-2 p-6 items-center ${
+                    isDragActive ? "border-white bg-white/5" : ""
                   }`}
                 >
                   <FileIcon className="w-12 h-12" />
@@ -86,10 +93,7 @@ export default function EmlCard() {
         )}
       </CardContent>
       <CardFooter>
-        <Button
-          size="lg"
-          onClick={submitFiles}
-        >
+        <Button size="lg" onClick={submitFiles}>
           Submit Files
         </Button>
       </CardFooter>

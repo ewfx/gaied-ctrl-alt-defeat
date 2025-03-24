@@ -6,12 +6,12 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
 } from "../ui/card";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -180,7 +180,7 @@ export default function AddReqForm() {
           </div>
         </form>
       </CardContent>
-      <CardFooter className="flex justify-between">
+      <CardFooter className="flex gap-6">
         <Button variant="outline" onClick={() => router.back()}>
           Go back
         </Button>

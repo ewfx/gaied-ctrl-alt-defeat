@@ -7,11 +7,11 @@ import Dropzone from "react-dropzone";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
 import {
-    Card,
-    CardContent,
-    CardFooter,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
 } from "../ui/card";
 
 export default function EmailPdfCard() {
@@ -35,7 +35,7 @@ export default function EmailPdfCard() {
     });
 
     axios
-      .post(backend_uri+"/classify-email-chain", formData, {
+      .post(backend_uri + "/classify-email-chain", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -57,7 +57,7 @@ export default function EmailPdfCard() {
       </CardHeader>
       <CardContent className="space-y-4">
         {emailPdf ? (
-          <div className="flex flex-col items-center space-y-2 border-2 p-4 rounded-md">
+          <div className="flex flex-col items-center space-y-2 border-1 p-4 rounded-md">
             <FileIcon className="w-12 h-12" />
             <span className="text-sm font-medium text-gray-500">
               {emailPdf.name}
@@ -82,13 +82,13 @@ export default function EmailPdfCard() {
           >
             {({ getRootProps, getInputProps, isDragActive }) => (
               <section>
-                <Label htmlFor="email-pdf" className="text-sm font-medium">
+                <Label htmlFor="email-pdf" className="text-lg font-medium">
                   Email PDF
                 </Label>
                 <div
                   {...getRootProps()}
-                  className={`border-2 border-dashed border-gray-200 rounded-lg flex flex-col gap-1 p-6 items-center ${
-                    isDragActive ? "border-blue-500" : "border-gray-300"
+                  className={`border-3 border-dashed rounded-lg flex flex-col gap-1 m-2 p-6 items-center ${
+                    isDragActive ? "border-white bg-white/5" : ""
                   }`}
                 >
                   <FileIcon className="w-12 h-12" />
@@ -112,13 +112,13 @@ export default function EmailPdfCard() {
         >
           {({ getRootProps, getInputProps, isDragActive }) => (
             <section>
-              <Label htmlFor="attachments" className="text-sm font-medium">
+              <Label htmlFor="attachments" className="text-lg font-medium">
                 Attachments
               </Label>
               <div
                 {...getRootProps()}
-                className={`border-2 border-dashed border-gray-200 rounded-lg flex flex-col gap-1 p-6 items-center ${
-                  isDragActive ? "border-blue-500" : "border-gray-300"
+                className={`border-3 border-dashed rounded-lg flex flex-col gap-1 m-2 p-6 items-center ${
+                  isDragActive ? "border-white bg-white/5" : ""
                 }`}
               >
                 <FileIcon className="w-12 h-12" />
@@ -180,12 +180,7 @@ export default function EmailPdfCard() {
         >
           Clear Files
         </Button>
-        <Button
-          size="lg"
-          variant="default"
-          onClick = {submitFiles}
-          
-        >
+        <Button size="lg" variant="default" onClick={submitFiles}>
           Submit Files
         </Button>
       </CardFooter>

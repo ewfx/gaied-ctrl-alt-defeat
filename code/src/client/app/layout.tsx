@@ -2,7 +2,6 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import ClientLayout from "./clientLayout";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -15,8 +14,6 @@ const geistMono = localFont({
   variable: "--font-geist-mono",
   weight: "100 900",
 });
-
-
 
 export const metadata: Metadata = {
   title: "Email Classifier",
@@ -40,9 +37,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <main>
-            <ClientLayout>
-              {children} 
-            </ClientLayout>
+            {children}
           </main>
         </ThemeProvider>
         <Toaster position="top-right" />

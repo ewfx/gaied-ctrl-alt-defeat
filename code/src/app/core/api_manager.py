@@ -1,7 +1,10 @@
+import logging
 import os
 import time
-from typing import Dict, Tuple, List, Optional
-import logging
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
+from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +18,16 @@ class ApiManager:
         self.api_keys: Dict[str, List[Tuple[str, int, int]]] = {}
         self.api_usage: Dict[str, Dict[str, Dict[str, any]]] = {}
         
+        
+        
         # Load API keys from environment variables
+        # Get the absolute path of the app directory
+        APP_DIR = Path(__file__).resolve().parent.parent
+
+        # Load .env from app directory
+        dotenv_path = APP_DIR / ".env"
+        load_dotenv(dotenv_path=dotenv_path)
+        
         for key, value in os.environ.items():
             if "_API_KEY_" in key:
                 parts = key.split('_')
