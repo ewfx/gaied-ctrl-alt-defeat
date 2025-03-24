@@ -306,10 +306,19 @@ class ClassificationService:
             List of request type results
         """
         try:
-            # Format request types for prompt (simplify for LLM)
+            # Format request types for prompt (include name and definition for sub-types)
             formatted_request_types = []
             for rt in request_types:
-                sub_types = [st.get("name") for st in rt.get("sub_request_types", [])]
+                # Format sub-types to include both name and definition
+                sub_types = [
+                    {
+                        "name": st.get("name"),
+                        "definition": st.get("definition", "")
+                    } 
+                    for st in rt.get("sub_request_types", [])
+                ]
+                
+                # Add the main request type with its sub-types
                 formatted_request_types.append({
                     "request_type": rt.get("name"),
                     "definition": rt.get("definition", ""),
