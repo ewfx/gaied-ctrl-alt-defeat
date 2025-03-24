@@ -43,6 +43,16 @@ class ClassificationService:
         start_time = time.time()
         
         try:
+            # Check file size once at the service level
+            if len(email_chain_file) > self.email_processor.max_attachment_size:
+                raise ValueError(f"Email chain file exceeds maximum size of {self.email_processor.max_attachment_size_mb}MB")
+            
+            # Check attachment size and throw early if any exceeds
+            if attachments:
+                for attachment in attachments:
+                    if len(attachment["content"]) > self.email_processor.max_attachment_size:
+                        raise ValueError(f"Attachment {attachment['filename']} exceeds maximum size of {self.email_processor.max_attachment_size_mb}MB")
+                    
             # Process email chain file and attachments
             logger.info(f"Processing email chain from file: {email_chain_filename}")
             email_info, processed_attachments = self.email_processor.process_email_chain(
@@ -143,6 +153,10 @@ class ClassificationService:
         start_time = time.time()
         
         try:
+            # Check file size once at the service level
+            if len(eml_content) > self.email_processor.max_attachment_size:
+                raise ValueError(f"EML file exceeds maximum size of {self.email_processor.max_attachment_size_mb}MB")
+            
             # Process EML file
             logger.info("Processing email from EML file")
             email_info, processed_attachments = self.email_processor.process_eml(eml_content)
