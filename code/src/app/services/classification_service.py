@@ -101,7 +101,7 @@ class ClassificationService:
             # Extract fields based on identified request types
             extracted_fields = []
             support_group = ""
-            
+            primary_request = None
             if request_type_results:
                 # Find primary request type
                 primary_request = next(
@@ -139,6 +139,7 @@ class ClassificationService:
                     "request_type": primary_request.request_type,
                     "sub_request_type": primary_request.sub_request_type,
                     "support_group": support_group,
+                    "confidence": primary_request.confidence,
                     "timestamp": datetime.now().isoformat(),
                 }
             )
@@ -220,6 +221,7 @@ class ClassificationService:
             # Extract fields based on identified request types
             extracted_fields = []
             support_group = ""
+            primary_request = None
             if request_type_results:
                 # Find primary request type
                 primary_request = next(
@@ -256,6 +258,7 @@ class ClassificationService:
                 {
                     "request_type": primary_request.request_type,
                     "sub_request_type": primary_request.sub_request_type,
+                    "confidence": primary_request.confidence,
                     "support_group": support_group,
                     "timestamp": datetime.now().isoformat(),
                 }

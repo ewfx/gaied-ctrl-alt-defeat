@@ -7,6 +7,7 @@ class Analytics(BaseModel):
     request_type: str
     sub_request_type: str
     support_group: str
+    confidence: float
     timestamp: str = datetime.now().isoformat()
 
 analytics_collection = db['analytics']
