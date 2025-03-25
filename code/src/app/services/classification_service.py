@@ -98,6 +98,7 @@ class ClassificationService:
             
             # Extract fields based on identified request types
             extracted_fields = []
+            support_group = ""
             if request_type_results:
                 # Find primary request type
                 primary_request = next(
@@ -199,6 +200,7 @@ class ClassificationService:
             
             # Extract fields based on identified request types
             extracted_fields = []
+            support_group = ""
             if request_type_results:
                 # Find primary request type
                 primary_request = next(
