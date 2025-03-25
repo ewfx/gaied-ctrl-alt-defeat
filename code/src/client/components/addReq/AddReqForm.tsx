@@ -23,6 +23,7 @@ export default function AddReqForm() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [definition, setDefinition] = useState("");
+  const [support_group, setSupport_group] = useState("");
   const [loading, setLoading] = useState(false);
 
   type SubRequest = {
@@ -82,6 +83,7 @@ export default function AddReqForm() {
     const response = await axios.post(`${backend_uri}/request-types/`, {
       name,
       definition,
+      support_group,
       sub_request_types: subRequests,
     });
       console.log("submit", response.data);
@@ -113,6 +115,15 @@ export default function AddReqForm() {
                 placeholder="Name of request type"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col space-y-1.5">
+              <Label htmlFor="name">Support group</Label>
+              <Input
+                id="support_group"
+                placeholder="Support group for request type"
+                value={support_group}
+                onChange={(e) => setSupport_group(e.target.value)}
               />
             </div>
             <div className="flex flex-col space-y-1.5">

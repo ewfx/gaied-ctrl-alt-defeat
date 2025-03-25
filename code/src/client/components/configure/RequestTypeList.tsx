@@ -36,6 +36,7 @@ export default function RequestTypeList() {
     _id: string;
     name: string;
     definition: string;
+    support_group: string;
     sub_request_types: SubRequestType[];
   };
   const [data, setData] = useState<RequestType[]>([]);
@@ -244,6 +245,11 @@ export default function RequestTypeList() {
                 <p className="text-lg mb-2 font-bold">Definition:</p>
 
                 <p className="pl-2 mb-4 ">{selectedReq.definition}</p>
+                
+                <Separator className="mb-4" />
+                <p className="text-lg mb-2 font-bold">Support Group:</p>
+
+                <p className="pl-2 mb-4 ">{selectedReq.support_group}</p>
 
                 <Separator className="mb-4" />
 

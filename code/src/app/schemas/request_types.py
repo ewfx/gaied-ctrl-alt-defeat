@@ -12,6 +12,7 @@ class SubRequestType(BaseModel):
 class RequestType(BaseModel):
     name: str
     definition: str
+    support_group: str
     sub_request_types: List[SubRequestType]
 
 request_type_collection = db['request_types']

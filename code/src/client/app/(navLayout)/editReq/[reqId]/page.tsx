@@ -25,6 +25,7 @@ export default function EditReqType() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [definition, setDefinition] = useState("");
+  const [support_group, setSupport_group] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -42,10 +43,12 @@ export default function EditReqType() {
         const response = await axios.get(
           `${backend_uri}/request-types/${reqId}`
         );
-        const { name, definition, sub_request_types } = response.data;
+        const { name, definition, support_group, sub_request_types } =
+          response.data;
         setName(name);
         setDefinition(definition);
         setSubRequests(sub_request_types);
+        setSupport_group(support_group);
       } catch (error) {
         console.error("Error fetching data", error);
         toast.error("Error fetching data");
@@ -107,6 +110,7 @@ export default function EditReqType() {
         {
           name,
           definition,
+          support_group,
           sub_request_types: subRequests,
         }
       );
@@ -161,6 +165,15 @@ export default function EditReqType() {
                     placeholder="Name of request type"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col space-y-1.5">
+                  <Label htmlFor="name">Support group</Label>
+                  <Input
+                    id="support_group"
+                    placeholder="Support group for request type"
+                    value={support_group}
+                    onChange={(e) => setSupport_group(e.target.value)}
                   />
                 </div>
                 <div className="flex flex-col space-y-1.5">
