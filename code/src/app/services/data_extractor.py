@@ -88,6 +88,7 @@ class DataExtractor:
                 - Look for specific evidence within the text to support your extraction
                 - Prefer sources in the priority order provided above (attachments first, then email body)
                 - If the same field is found in multiple sources, choose the highest priority source
+                - ONLY RETURN THE JSON. Avoid adding any other text in your response like explanation, reasoning etc.
                 """
             
             

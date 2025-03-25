@@ -9,6 +9,8 @@ from app.services.duplicate_detector import DuplicateDetector
 from app.services.data_extractor import DataExtractor
 from app.models.response_models import ClassificationResponse, RequestTypeResult
 from app.schemas.request_types import request_type_collection
+from app.schemas.analytics import analytics_collection
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +101,7 @@ class ClassificationService:
             # Extract fields based on identified request types
             extracted_fields = []
             support_group = ""
+            
             if request_type_results:
                 # Find primary request type
                 primary_request = next(
@@ -123,6 +126,22 @@ class ClassificationService:
             
             processing_time = (time.time() - start_time) * 1000
             logger.info(f"Email chain processing completed in {processing_time:.2f}ms")
+            
+            if not request_types:
+                raise Exception("No request type found")
+            
+            if not primary_request:
+                primary_request = request_types[0]
+            
+            
+            await analytics_collection.insert_one(
+                {
+                    "request_type": primary_request.request_type,
+                    "sub_request_type": primary_request.sub_request_type,
+                    "support_group": support_group,
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
             
             return ClassificationResponse(
                 request_types=request_type_results,
@@ -225,6 +244,23 @@ class ClassificationService:
             
             processing_time = (time.time() - start_time) * 1000
             logger.info(f"EML processing completed in {processing_time:.2f}ms")
+            
+            if not request_types:
+                raise Exception("No request type found")
+            
+            if not primary_request:
+                primary_request = request_types[0]
+            
+            
+            await analytics_collection.insert_one(
+                {
+                    "request_type": primary_request.request_type,
+                    "sub_request_type": primary_request.sub_request_type,
+                    "support_group": support_group,
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
+            
             
             return ClassificationResponse(
                 request_types=request_type_results,
@@ -374,6 +410,7 @@ class ClassificationService:
                     - If multiple request types are present, rank them by relevance
                     - If you're unsure, use a lower confidence score
                     - Match request types exactly as provided in the available types
+                    - ONLY RETURN THE JSON. Avoid adding any other text in your response like explanation, reasoning etc.
                     """
             
             # Create human prompt
