@@ -10,6 +10,9 @@ import logging
 # Document processing
 import pypdf
 from bs4 import BeautifulSoup
+from PIL import Image
+import numpy as np
+import easyocr
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +50,7 @@ class EmailProcessor:
         if attachments:
             for idx, attachment in enumerate(attachments):
                 try:
+                    logger.info(f"Attachment; {attachment['filename']}")
                     # Check attachment size
                     if len(attachment["content"]) > self.max_attachment_size:
                         logger.warning(f"Attachment too large: {attachment['filename']} ({len(attachment['content'])/1024/1024:.2f} MB)")
@@ -198,7 +202,7 @@ class EmailProcessor:
                 return self._extract_text_from_html(content.decode('utf-8', errors='ignore'))
             elif file_extension in ['.jpg', '.jpeg', '.png', '.gif', '.bmp']:
                 # Image files - return placeholder
-                return f"[Image file: {filename}]"
+                return self._extract_text_from_image(content)
             else:
                 # Check content type as fallback
                 if content_type and 'pdf' in content_type:
@@ -324,6 +328,22 @@ class EmailProcessor:
             # Fall back to basic regex approach
             text = re.sub(r'<[^>]+>', ' ', html_content)
             return self._clean_text(text)
+    
+    def _extract_text_from_image(self, image_content: bytes) -> str:
+        """Extract text from image file content using EasyOCR"""
+        try:
+            reader = easyocr.Reader(['en'])
+            
+            # Convert bytes to a numpy array
+            image = np.array(Image.open(io.BytesIO(image_content)))
+            
+            # Use EasyOCR to extract text
+            result = reader.readtext(image, detail=0)
+            text = ' '.join(result)
+            return self._clean_text(text)
+        except Exception as e:
+            logger.error(f"Error extracting text from image: {str(e)}")
+            return f"[Error extracting text from image: {str(e)}]"
     
     def _extract_text_from_docx(self, content: bytes) -> str:
         """Extract text from DOCX file content"""

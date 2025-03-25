@@ -86,7 +86,7 @@ class DataExtractor:
                 - Format dates in ISO format (YYYY-MM-DD) when possible
                 - Look for specific evidence within the text to support your extraction
                 - Prefer sources in the priority order provided above (attachments first, then email body)
-                - Don't include fields where you couldn't find any relevant information (confidence < 0.5)
+                - make sure to extract all fields. if you dont find data for a field give the most probable guess with low confidence
                 - If the same field is found in multiple sources, choose the highest priority source
                 """
             
@@ -97,12 +97,13 @@ class DataExtractor:
 
                 EMAIL CONTENT:
                 {email_content}
+                ATTACHMENT CONTENT:
                 {attachments_str}
 
                 Based on the above email content and attachments, extract all relevant fields.
                 Remember to prioritize attachments over email body when extracting data.
                 """
-            print(human_prompt)
+            # print(human_prompt)
             # Get LLM for data extraction
             llm = self.llm_handler.get_llm("data_extraction")
             

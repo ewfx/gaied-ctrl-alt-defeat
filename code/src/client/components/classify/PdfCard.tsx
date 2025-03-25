@@ -17,7 +17,11 @@ import {
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
 
-export default function EmailPdfCard({ setChildLoading }: { setChildLoading: (loading: boolean) => void }) {
+export default function EmailPdfCard({
+  setChildLoading,
+}: {
+  setChildLoading: (loading: boolean) => void;
+}) {
   const [emailPdf, setEmailPdf] = useState<File | null>(null);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,11 +36,13 @@ export default function EmailPdfCard({ setChildLoading }: { setChildLoading: (lo
     setIsSubmitting(true);
     setChildLoading(true);
     const formData = new FormData();
-    if (emailPdf) {
-      formData.append("email_chain_file", emailPdf);
-    }
-    attachments.forEach((attachment, index) => {
-      formData.append(`attachments[${index}]`, attachment);
+
+    // Append the main email PDF file
+    formData.append("email_chain_file", emailPdf);
+
+    // Append attachments
+    attachments.forEach((file) => {
+      formData.append("attachments", file);
     });
 
     axios
@@ -202,10 +208,8 @@ export default function EmailPdfCard({ setChildLoading }: { setChildLoading: (lo
           <DialogContent>
             <DialogTitle />
             <div className="flex flex-col w-full h-full justify-center items-center">
-            <LoadingSpinner size={50} />
-            <p className="text-md">
-              Submitting...
-            </p>
+              <LoadingSpinner size={50} />
+              <p className="text-md">Submitting...</p>
             </div>
           </DialogContent>
         </Dialog>
