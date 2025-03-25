@@ -135,6 +135,15 @@ const Dashboard = () => {
             confidence: req.confidence,
           }));
           setConfidenceData(confidenceData);
+          // Calculate requests per day
+          const requestsPerDay = Object.entries(
+            response.data.reduce((acc, { timestamp }) => {
+              const date = new Date(timestamp).toLocaleDateString();
+              acc[date] = (acc[date] || 0) + 1;
+              return acc;
+            }, {} as Record<string, number>)
+          ).map(([date, count]) => ({ date, count: count as number }));
+          setRequestsPerDay(requestsPerDay);
           setDataLoaded(true);
         } else {
           console.error("Fetched data is not an array:", response.data);
@@ -150,6 +159,9 @@ const Dashboard = () => {
   const [totalRequests, setTotalRequests] = useState(0);
   const [requestTypeCount, setRequestTypeCount] = useState<
     { name: string; value: number }[]
+  >([]);
+  const [requestsPerDay, setRequestsPerDay] = useState<
+    { date: string; count: number }[]
   >([]);
   const [requestTypeChartConfig, setRequestTypeChartConfig] =
     useState<ChartConfig>({});
@@ -167,7 +179,9 @@ const Dashboard = () => {
           {/* Request Type Distribution */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-2xl">Request Type Distribution</CardTitle>
+              <CardTitle className="text-2xl">
+                Request Type Distribution
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <ChartContainer
@@ -257,6 +271,34 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
+          {/* Requests Per Day */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-2xl">Requests Per Day</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={chartConfig}>
+                <BarChart data={requestsPerDay}>
+                  <CartesianGrid vertical={false} />
+                  <XAxis dataKey="date" tickLine={false} tickMargin={10} />
+                  <YAxis />
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent hideLabel />}
+                  />
+                  <Bar dataKey="count" radius={10}>
+                    {requestsPerDay.map((_, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={`hsl(var(--chart-${(index % 5) + 1}))`}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+
           {/* Confidence Levels */}
           <Card className="">
             <CardHeader>
@@ -292,20 +334,36 @@ const Dashboard = () => {
               <Table className="border-1">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="border-1 bg-white/5" >Request Type</TableHead>
-                    <TableHead className="border-1 bg-white/5" >Sub Request Type</TableHead>
-                    <TableHead className="border-1 bg-white/5" >Support Group</TableHead>
-                    <TableHead className="border-1 bg-white/5" >Confidence</TableHead>
-                    <TableHead className="border-1 bg-white/5" >Timestamp</TableHead>
+                    <TableHead className="border-1 bg-white/5">
+                      Request Type
+                    </TableHead>
+                    <TableHead className="border-1 bg-white/5">
+                      Sub Request Type
+                    </TableHead>
+                    <TableHead className="border-1 bg-white/5">
+                      Support Group
+                    </TableHead>
+                    <TableHead className="border-1 bg-white/5">
+                      Confidence
+                    </TableHead>
+                    <TableHead className="border-1 bg-white/5">
+                      Timestamp
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.map((req) => (
-                    <TableRow key={req._id}>
-                      <TableCell className="border-1" >{req.request_type}</TableCell>
-                      <TableCell className="border-1" >{req.sub_request_type}</TableCell>
-                      <TableCell className="border-1" >{req.support_group}</TableCell>
-                      <TableCell className="border-1" >
+                  {data.map((req, index) => (
+                    <TableRow key={'index-'+index}>
+                      <TableCell className="border-1">
+                        {req.request_type}
+                      </TableCell>
+                      <TableCell className="border-1">
+                        {req.sub_request_type}
+                      </TableCell>
+                      <TableCell className="border-1">
+                        {req.support_group}
+                      </TableCell>
+                      <TableCell className="border-1">
                         {(req.confidence * 100).toFixed(2)}%
                       </TableCell>
                       <TableCell>
@@ -321,9 +379,7 @@ const Dashboard = () => {
       ) : (
         <div className="flex flex-col items-center justify-center min-h-screen">
           <LoadingSpinner size={50} />
-          <div className="text-3xl">
-            Loading data...
-          </div>
+          <div className="text-3xl">Loading data...</div>
         </div>
       )}
     </>
