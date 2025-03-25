@@ -1,7 +1,7 @@
 {
     "email_classification": {
         "llm": "OpenRouterLLM",
-        "model": "deepseek/deepseek-r1:free",
+        "model": "google/gemma-2-9b-it:free",
         "temperature": 0.7,
         "api_key_name": "OPENROUTER_API_KEY",
         "http_referer": "https://localhost",
@@ -9,7 +9,7 @@
     },
     "data_extraction": {
         "llm": "OpenRouterLLM",
-        "model": "deepseek/deepseek-r1:free",
+        "model": "google/gemma-2-9b-it:free",
         "temperature": 0.7,
         "api_key_name": "OPENROUTER_API_KEY",
         "http_referer": "https://localhost",
@@ -17,7 +17,7 @@
     },
     "duplicate_detection": {
         "llm": "OpenRouterLLM",
-        "model": "deepseek/deepseek-r1:free",
+        "model": "google/gemma-2-9b-it:free",
         "temperature": 0.7,
         "api_key_name": "OPENROUTER_API_KEY",
         "http_referer": "https://localhost",
@@ -25,7 +25,7 @@
     },
     "fallback": {
         "llm": "OpenRouterLLM",
-        "model": "deepseek/deepseek-r1:free",
+        "model": "google/gemma-2-9b-it:free",
         "temperature": 0.7,
         "api_key_name": "OPENROUTER_API_KEY",
         "http_referer": "https://localhost",

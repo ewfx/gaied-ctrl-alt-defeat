@@ -23,7 +23,7 @@ class OpenRouterLLM(BaseChatOpenAI):
     
     def __init__(
         self,
-        model_name: str = "deepseek/deepseek-r1:free",  # Changed from model to model_name
+        model_name: str = "google/gemma-2-9b-it:free",  # Changed from model to model_name
         openai_api_key: str = None,
         temperature: float = 0.7,
         openrouter_headers: Optional[Dict[str, str]] = None,
