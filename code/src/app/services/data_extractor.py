@@ -90,7 +90,6 @@ class DataExtractor:
                 - If the same field is found in multiple sources, choose the highest priority source
                 """
             
-            # print(system_prompt)
             
             # Create human prompt
             human_prompt = f"""REQUEST TYPE: {request_type} - {sub_request_type}
@@ -103,7 +102,6 @@ class DataExtractor:
                 Based on the above email content and attachments, extract all relevant fields.
                 Remember to prioritize attachments over email body when extracting data.
                 """
-            # print(human_prompt)
             # Get LLM for data extraction
             llm = self.llm_handler.get_llm("data_extraction")
             

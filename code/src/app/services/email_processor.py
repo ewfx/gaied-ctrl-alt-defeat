@@ -106,11 +106,11 @@ class EmailProcessor:
                     content_disposition = str(part.get("Content-Disposition", ""))
                     
                     # Extract body content
-                    if "attachment" not in content_disposition and part.get_content() is not None:
+                    if "attachment" not in content_disposition and part.get_payload(decode=True) is not None:
                         if content_type == "text/plain":
-                            email_info["content"] += part.get_content() + "\n\n"
+                            email_info["content"] += part.get_payload(decode=True).decode('utf-8', errors='ignore') + "\n\n"
                         elif content_type == "text/html":
-                            html_content = part.get_content()
+                            html_content = part.get_payload(decode=True).decode('utf-8', errors='ignore')
                             email_info["content"] += self._extract_text_from_html(html_content) + "\n\n"
                     
                     # Extract attachments
@@ -167,7 +167,7 @@ class EmailProcessor:
             return email_info, processed_attachments
             
         except Exception as e:
-            logger.error(f"Error processing EML: {str(e)}")
+            logger.error(f"Error processing EML: {str(e)}", exc_info=True)
             # Fallback to basic processing
             email_info = {
                 "sender": "Unknown",
