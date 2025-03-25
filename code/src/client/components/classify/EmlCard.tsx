@@ -40,10 +40,14 @@ export default function EmlCard({ setChildLoading }: EmlCardProps) {
     axios
       .post(backend_uri + "/classify-eml", formData)
       .then((response) => {
-        toast.success("File submitted successfully!");
-        console.log("Success:", response.data);
-        localStorage.setItem("successData", JSON.stringify(response.data));
-        router.push("/classify/success");
+        if (response.data.error) {
+          toast.error(`File submission failed! ${response.data.error}`);
+        } else {
+          toast.success("File submitted successfully!");
+          console.log("Success:", response.data);
+          localStorage.setItem("successData", JSON.stringify(response.data));
+          router.push("/classify/success");
+        }
       })
       .catch((error) => {
         toast.error("File submission failed!");

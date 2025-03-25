@@ -80,13 +80,13 @@ class DataExtractor:
 
                 RULES:
                 - IMPORTANT: For data extraction, prioritize attachments over email body (opposite of request type identification)
+                - Extract all fields in fields to extract-if you are not sure about the value, guess the most probable value and give low confidence score
+                - Do not add any fields that are not in the fields to extract
                 - Source should be "email_body" or "attachment_1", "attachment_2", etc.
-                - Only extract fields you are confident about (provide confidence score 0-1)
                 - For numerical values, provide them as numbers not strings when appropriate
                 - Format dates in ISO format (YYYY-MM-DD) when possible
                 - Look for specific evidence within the text to support your extraction
                 - Prefer sources in the priority order provided above (attachments first, then email body)
-                - make sure to extract all fields. if you dont find data for a field give the most probable guess with low confidence
                 - If the same field is found in multiple sources, choose the highest priority source
                 """
             

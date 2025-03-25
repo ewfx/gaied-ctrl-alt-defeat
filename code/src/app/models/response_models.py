@@ -42,6 +42,7 @@ class ClassificationResponse(BaseModel):
     """Model for the complete classification response"""
     request_types: List[RequestTypeResult]
     extracted_fields: List[ExtractedField]
+    support_group: str
     is_duplicate: bool = False
     duplicate_reason: Optional[str] = None
     processing_time_ms: Optional[float] = None

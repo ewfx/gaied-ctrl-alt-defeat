@@ -107,7 +107,7 @@ class ClassificationService:
                 
                 if primary_request:
                     # Get required attributes for the sub-request type
-                    required_attributes = await self._get_required_attributes(
+                    required_attributes, support_group = await self._get_required_attributes(
                         primary_request.request_type,
                         primary_request.sub_request_type
                     )
@@ -126,6 +126,7 @@ class ClassificationService:
             return ClassificationResponse(
                 request_types=request_type_results,
                 extracted_fields=extracted_fields,
+                support_group=support_group,
                 is_duplicate=False,
                 duplicate_reason=None,
                 processing_time_ms=processing_time
@@ -138,6 +139,7 @@ class ClassificationService:
             return ClassificationResponse(
                 request_types=[],
                 extracted_fields=[],
+                support_group="",
                 is_duplicate=False,
                 duplicate_reason=None,
                 processing_time_ms=processing_time,
@@ -206,7 +208,7 @@ class ClassificationService:
                 
                 if primary_request:
                     # Get required attributes for the sub-request type
-                    required_attributes = await self._get_required_attributes(
+                    required_attributes, support_group = await self._get_required_attributes(
                         primary_request.request_type,
                         primary_request.sub_request_type
                     )
@@ -225,6 +227,7 @@ class ClassificationService:
             return ClassificationResponse(
                 request_types=request_type_results,
                 extracted_fields=extracted_fields,
+                support_group=support_group,
                 is_duplicate=False,
                 duplicate_reason=None,
                 processing_time_ms=processing_time
@@ -237,6 +240,7 @@ class ClassificationService:
             return ClassificationResponse(
                 request_types=[],
                 extracted_fields=[],
+                support_group="",
                 is_duplicate=False,
                 duplicate_reason=None,
                 processing_time_ms=processing_time,
@@ -262,7 +266,7 @@ class ClassificationService:
     
     async def _get_required_attributes(self, request_type_name: str, sub_request_type_name: str) -> List[str]:
         """
-        Get required attributes for a specific request type and sub-request type
+        Get required attributes and support group for a specific request type and sub-request type
         """
         try:
             # Find request type by name
@@ -272,10 +276,13 @@ class ClassificationService:
                 logger.warning(f"Request type not found: {request_type_name}")
                 return []
             
+            # Find support group
+            support_group = request_type.get("support_group", "")
+            
             # Find sub-request type
             for sub_type in request_type.get("sub_request_types", []):
                 if sub_type.get("name") == sub_request_type_name:
-                    return sub_type.get("required_attributes", [])
+                    return (sub_type.get("required_attributes", []), support_group)
             
             logger.warning(f"Sub-request type not found: {sub_request_type_name} in {request_type_name}")
             return []
