@@ -52,11 +52,16 @@ export default function EmailPdfCard({
         },
       })
       .then((response) => {
-        console.log("Success:", response.data);
+        if (response.data.error !== null) {
+          toast.error(`File submission failed! ${response.data.error}`);
+
+        } else {
+          console.log("Success:", response.data);
         localStorage.setItem("successData", JSON.stringify(response.data));
         router.push("/classify/success");
 
         toast.success("Files submitted successfully");
+        }
       })
       .catch((error) => {
         console.error("Error:", error);

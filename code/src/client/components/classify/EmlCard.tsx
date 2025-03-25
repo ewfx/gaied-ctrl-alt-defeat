@@ -40,7 +40,7 @@ export default function EmlCard({ setChildLoading }: EmlCardProps) {
     axios
       .post(backend_uri + "/classify-eml", formData)
       .then((response) => {
-        if (response.data.error) {
+        if (response.data.error !== null) {
           toast.error(`File submission failed! ${response.data.error}`);
         } else {
           toast.success("File submitted successfully!");

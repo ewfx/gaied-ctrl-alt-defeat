@@ -276,10 +276,10 @@ class ClassificationService:
             
             if not request_type:
                 logger.warning(f"Request type not found: {request_type_name}")
-                return []
+                return ([], "Not found")
             
             # Find support group
-            support_group = request_type.get("support_group", "")
+            support_group = request_type.get("support_group", "Not found")
             
             # Find sub-request type
             for sub_type in request_type.get("sub_request_types", []):
@@ -287,11 +287,11 @@ class ClassificationService:
                     return (sub_type.get("required_attributes", []), support_group)
             
             logger.warning(f"Sub-request type not found: {sub_request_type_name} in {request_type_name}")
-            return []
+            return ([], support_group)
             
         except Exception as e:
             logger.error(f"Error retrieving required attributes: {str(e)}")
-            return []
+            return ([], support_group)
             
     async def _identify_request_types(self,
                                     email_content: str,
