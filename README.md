@@ -38,23 +38,23 @@ A powerful API for automatically classifying commercial bank lending service ema
 
 ### UI Landing page
 
-![UI landing page](artifacts/demo/front_UI.jpeg)
+![UI landing page](artifacts/demo/Images/front_UI.jpeg)
 
 ### Upload files page
 
-![upload files page](artifacts/demo/upload_files_pdf.jpeg)
+![upload files page](artifacts/demo/Images/upload_files_pdf.jpeg)
 
 ### Configure page
 
-![configure page](artifacts/demo/configure_request_types.jpeg)
+![configure page](artifacts/demo/Images/configure_request_types.jpeg)
 
 ### Analysis page
 
-![analysis page](artifacts/demo/analysis_diagrams.jpeg)
+![analysis page](artifacts/demo/Images/analysis_diagrams.jpeg)
 
 ### Analysis page recent requests
 
-![analysis page_recent_requests](artifacts/demo/recent_requests.jpeg)
+![analysis page_recent_requests](artifacts/demo/Images/recent_requests.jpeg)
 
 
 
