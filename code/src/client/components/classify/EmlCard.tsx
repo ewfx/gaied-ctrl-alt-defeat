@@ -151,7 +151,7 @@ export default function EmlCard({ setChildLoading }: EmlCardProps) {
           <div className="space-y-4">
             <p>
               A duplicate file has been detected with a confidence of{" "}
-              <span className="font-bold">{duplicateData.duplicate_confidence.toFixed(3)}%</span>.
+              <span className="font-bold">{duplicateData.duplicate_confidence.toFixed(3)}</span>.
             </p>
             <div className="font-semibold text-lg">Reason:</div> <div> {duplicateData.duplicate_reason}</div>
           </div>

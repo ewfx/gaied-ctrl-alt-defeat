@@ -1,7 +1,7 @@
 import { backend_uri } from "@/app/Config";
 import { Label } from "@radix-ui/react-label";
 import axios from "axios";
-import { FileIcon } from "lucide-react";
+import { FileIcon, FileWarning } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Dropzone from "react-dropzone";
@@ -16,6 +16,7 @@ import {
 } from "../ui/card";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
+import { Separator } from "../ui/separator";
 
 export default function EmailPdfCard({
   setChildLoading,
@@ -25,6 +26,12 @@ export default function EmailPdfCard({
   const [emailPdf, setEmailPdf] = useState<File | null>(null);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDupeDialog, setShowDupeDialog] = useState(false);
+  const [duplicateData, setDuplicateData] = useState({
+    duplicate_confidence: 0,
+    duplicate_id: "",
+    duplicate_reason: "",
+  });
 
   const router = useRouter();
 
@@ -54,13 +61,22 @@ export default function EmailPdfCard({
       .then((response) => {
         if (response.data.error !== null) {
           toast.error(`File submission failed! ${response.data.error}`);
-
+        } else if (
+          response.data.is_duplicate &&
+          response.data.duplicate_confidence > 0.8
+        ) {
+          setDuplicateData({
+            duplicate_confidence: response.data.duplicate_confidence,
+            duplicate_id: response.data.duplicate_id,
+            duplicate_reason: response.data.duplicate_reason,
+          });
+          setShowDupeDialog(true);
         } else {
           console.log("Success:", response.data);
-        localStorage.setItem("successData", JSON.stringify(response.data));
-        router.push("/classify/success");
+          localStorage.setItem("successData", JSON.stringify(response.data));
+          router.push("/classify/success");
 
-        toast.success("Files submitted successfully");
+          toast.success("Files submitted successfully");
         }
       })
       .catch((error) => {
@@ -215,6 +231,25 @@ export default function EmailPdfCard({
             <div className="flex flex-col w-full h-full justify-center items-center">
               <LoadingSpinner size={50} />
               <p className="text-md">Submitting...</p>
+            </div>
+          </DialogContent>
+        </Dialog>
+        <Dialog open={showDupeDialog} onOpenChange={setShowDupeDialog}>
+          <DialogContent>
+            <DialogTitle className="flex items-center gap-3">
+              <FileWarning /> Duplicate File Detected
+            </DialogTitle>
+            <Separator />
+            <div className="space-y-4">
+              <p>
+                A duplicate file has been detected with a confidence of{" "}
+                <span className="font-bold">
+                  {duplicateData.duplicate_confidence.toFixed(3)}
+                </span>
+                .
+              </p>
+              <div className="font-semibold text-lg">Reason:</div>{" "}
+              <div> {duplicateData.duplicate_reason}</div>
             </div>
           </DialogContent>
         </Dialog>

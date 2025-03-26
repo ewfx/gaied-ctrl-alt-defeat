@@ -165,7 +165,7 @@ export default function ClassifySuccess() {
                 <p>
                   A duplicate file has been detected with a confidence of{" "}
                   <span className="font-bold">
-                    {data.duplicate_confidence.toFixed(3)}%
+                    {data.duplicate_confidence.toFixed(3)}
                   </span>
                   .
                 </p>
