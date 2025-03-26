@@ -1,6 +1,7 @@
 "use client";
 
 import { backend_uri } from "@/app/Config";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ChartConfig,
@@ -18,6 +19,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import axios from "axios";
+import { ExternalLink } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   Area,
@@ -42,12 +45,24 @@ const chartConfig = {
 
 const Dashboard = () => {
   interface RequestData {
-    _id: string;
     request_type: string;
     sub_request_type: string;
-    confidence: number;
     support_group: string;
+    confidence: number;
     timestamp: string;
+    request_types: Array<{
+      request_type: string;
+      sub_request_type: string;
+      confidence: number;
+      reasoning: string;
+      is_primary: boolean;
+    }>;
+    extracted_fields: Array<{
+      field_name: string;
+      value: number | string;
+      confidence: number;
+      source: string;
+    }>;
   }
 
   const [data, setData] = useState<RequestData[]>([]);
@@ -55,6 +70,19 @@ const Dashboard = () => {
   const [duplicateConfidenceData, setDuplicateConfidenceData] = useState<
     { timestamp: string; duplicate_confidence: number }[]
   >([]);
+
+  const router = useRouter();
+
+  const handleDetails = (data: RequestData) => {
+    const successData = {
+      is_duplicate: false,
+      request_types: data.request_types,
+      support_group: data.support_group,
+      extracted_fields: data.extracted_fields,
+    };
+    localStorage.setItem("successData", JSON.stringify(successData));
+    router.push("/classify/success");
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -398,6 +426,9 @@ const Dashboard = () => {
                     <TableHead className="border-1 bg-white/5">
                       Timestamp
                     </TableHead>
+                    <TableHead className="border-1 bg-white/5">
+                      {"  "}
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -415,8 +446,16 @@ const Dashboard = () => {
                       <TableCell className="border-1">
                         {(req.confidence * 100).toFixed(2)}%
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="border-1">
                         {new Date(req.timestamp).toLocaleString()}
+                      </TableCell>
+                      <TableCell className="border-1">
+                        <Button
+                          variant={"link"}
+                          onClick={() => handleDetails(req)}
+                        >
+                          View Details <ExternalLink />{" "}
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}

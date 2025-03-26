@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from ..db.session import db
 from datetime import datetime
+from typing import List
 
 
 class Analytics(BaseModel):
@@ -9,6 +10,8 @@ class Analytics(BaseModel):
     support_group: str
     confidence: float
     timestamp: str = datetime.now().isoformat()
+    request_types: List[dict]
+    extracted_fields: List[dict]
 
 class DuplicateAnalytics(BaseModel):
     timestamp: str = datetime.now().isoformat()

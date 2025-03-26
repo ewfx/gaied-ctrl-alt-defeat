@@ -95,17 +95,24 @@ class ClassificationService:
             )
             
             if is_duplicate:
-                logger.info(f"Duplicate email detected: {duplicate_reason} (confidence: {confidence_score:.2f})")
-                return ClassificationResponse(
-                    request_types=[],
-                    extracted_fields=[],
-                    support_group="",
-                    is_duplicate=True,
-                    duplicate_reason=duplicate_reason,
-                    duplicate_confidence=confidence_score,
-                    duplicate_id=duplicate_id,
-                    processing_time_ms=(time.time() - start_time) * 1000
+                await duplicate_analytics_collection.insert_one(
+                    {
+                        "duplicate_confidence": confidence_score,
+                        "timestamp": datetime.now().isoformat(),
+                    }
                 )
+                logger.info(f"Duplicate email detected: {duplicate_reason} (confidence: {confidence_score:.2f})")
+                if confidence_score > 0.74:
+                    return ClassificationResponse(
+                        request_types=[],
+                        extracted_fields=[],
+                        support_group="",
+                        is_duplicate=True,
+                        duplicate_reason=duplicate_reason,
+                        duplicate_confidence=confidence_score,
+                        duplicate_id=duplicate_id,
+                        processing_time_ms=(time.time() - start_time) * 1000
+                    )
             
             # Get request types from MongoDB
             request_types = await self._get_request_types_from_db()
@@ -163,6 +170,23 @@ class ClassificationService:
                     "support_group": support_group,
                     "confidence": primary_request.confidence,
                     "timestamp": datetime.now().isoformat(),
+                    "request_types": [
+                        {
+                            "request_type": result.request_type,
+                            "sub_request_type": result.sub_request_type,
+                            "confidence": result.confidence,
+                            "reasoning": result.reasoning,
+                            "is_primary": result.is_primary
+                        } for result in request_type_results
+                    ],
+                    "extracted_fields": [
+                        {
+                            "field_name": field.field_name,
+                            "value": field.value,
+                            "confidence": field.confidence,
+                            "source": field.source
+                        } for field in extracted_fields
+                    ]
                 }
             )
             
@@ -311,9 +335,26 @@ class ClassificationService:
                 {
                     "request_type": primary_request.request_type,
                     "sub_request_type": primary_request.sub_request_type,
-                    "confidence": primary_request.confidence,
                     "support_group": support_group,
+                    "confidence": primary_request.confidence,
                     "timestamp": datetime.now().isoformat(),
+                    "request_types": [
+                        {
+                            "request_type": result.request_type,
+                            "sub_request_type": result.sub_request_type,
+                            "confidence": result.confidence,
+                            "reasoning": result.reasoning,
+                            "is_primary": result.is_primary
+                        } for result in request_type_results
+                    ],
+                    "extracted_fields": [
+                        {
+                            "field_name": field.field_name,
+                            "value": field.value,
+                            "confidence": field.confidence,
+                            "source": field.source
+                        } for field in extracted_fields
+                    ]
                 }
             )
             
