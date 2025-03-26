@@ -32,13 +32,26 @@ A powerful API for automatically classifying commercial bank lending service ema
 📹 [Video Demo](#) (if applicable)
   
 🖼️ Screenshots:
+![Overall detailed flow](artifacts/arch/detailed_flow.png)
+![UI landing page](artifacts/demo/front_UI.jpeg)
+![upload files page](artifacts/demo/upload_files_pdf.jpeg)
+![configure page](artifacts/demo/configure_request_types.jpeg)
+![analysis page](artifacts/demo/analysis_diagrams.jpeg)
+![analysis page_recent_requests](artifacts/demo/recent_requests.jpeg)
+
 
 
 
 
 
 ## 💡 Inspiration
+The inspiration for this project stemmed from the growing need to efficiently process and analyze large volumes of unstructured information, such as emails and attachments. We recognized that businesses and individuals often struggle with retrieving relevant data quickly, especially when dealing with redundant content and scattered information.
 
+With advancements in LLMs (Large Language Models) and embeddings, we saw an opportunity to build an intelligent system that could streamline this process. Our goal was to leverage Gemma 2.9B and all-MiniLM-L6-v2 embeddings to create a solution that not only retrieves relevant documents but also understands context, enabling users to find insights effortlessly.
+
+We also wanted to ensure that our system was scalable, efficient, and user-friendly, which led us to choose a modern stack: Next.js + ShadCN for the frontend, FastAPI + LangChain for the backend, and MongoDB for data storage. These technologies allowed us to build an interactive and seamless experience while maintaining high performance.
+
+Ultimately, this project was driven by our passion for AI-powered solutions and our desire to simplify information retrieval, making knowledge more accessible and actionable.
 
 
 ## ⚙️ What It Does
