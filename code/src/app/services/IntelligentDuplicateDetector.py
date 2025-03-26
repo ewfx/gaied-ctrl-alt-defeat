@@ -457,6 +457,31 @@ class IntelligentDuplicateDetector:
                 if best_match['received_date']:
                     reason += f" (received: {best_match['received_date'].isoformat() if isinstance(best_match['received_date'], datetime) else best_match['received_date']})"
                 logger.info(f"Medium confidence duplicate detected: {reason}")
+                logger.info(f"adding to cache with id {email_id}")
+                # medium confidence duplicates also go into cache
+                email_data = {
+                    'id': email_id,
+                    'content_embedding': content_embedding,
+                    'subject_embedding': subject_embedding,
+                    'normalized_content': normalized_content,
+                    'normalized_subject': normalized_subject,
+                    'sender': sender,
+                    'recipient': recipient,
+                    'subject': subject,
+                    'message_id': message_id,
+                    'thread_id': derived_thread_id,
+                    'received_date': received_date.isoformat() if isinstance(received_date, datetime) else received_date,
+                    'ip_address': ip_address,
+                    'expiry': (current_time + self.cache_duration).isoformat()
+                }
+                
+                # Add any additional metadata
+                if additional_metadata:
+                    email_data['additional_metadata'] = additional_metadata
+                    logger.info(f"Added additional metadata: {len(additional_metadata)} fields")
+                
+                # Store in cache
+                self.email_cache.put(email_id, email_data)
                 return True, reason, best_match['score'], best_match['id']
             
             logger.info(f"Best match score {best_match['score']:.4f} below threshold, not treating as duplicate")

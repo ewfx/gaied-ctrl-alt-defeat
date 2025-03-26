@@ -33,41 +33,6 @@ import {
   YAxis,
 } from "recharts";
 
-// const data = [
-//   {
-//     _id: "67e2fe91fa5cefc8eec15603",
-//     request_type: "Adjustment",
-//     sub_request_type: "Reallocation Fees",
-//     confidence: 0.95,
-//     support_group: "Loan Adjustments Team",
-//     timestamp: "2025-03-26T00:35:53.616532",
-//   },
-//   {
-//     _id: "67e2ff660ffabf8e6f795f43",
-//     request_type: "Adjustment",
-//     sub_request_type: "Other",
-//     confidence: 0.95,
-//     support_group: "Loan Adjustments Team",
-//     timestamp: "2025-03-26T00:39:26.900013",
-//   },
-//   {
-//     _id: "67e300e9815e03c4ea606ecc",
-//     request_type: "Closing Notice",
-//     sub_request_type: "Amendment Fees",
-//     confidence: 0.98,
-//     support_group: "Banking Operations Team",
-//     timestamp: "2025-03-26T00:45:53.081658",
-//   },
-//   {
-//     _id: "67e30106815e03c4ea606ecd",
-//     request_type: "AU Transfer",
-//     sub_request_type: "Internal account transfer",
-//     confidence: 0.95,
-//     support_group: "Cash Management Team",
-//     timestamp: "2025-03-26T00:46:22.887084",
-//   },
-// ];
-
 const chartConfig = {
   value: {
     label: "Value",
@@ -87,11 +52,35 @@ const Dashboard = () => {
 
   const [data, setData] = useState<RequestData[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [duplicateConfidenceData, setDuplicateConfidenceData] = useState<
+    { timestamp: string; duplicate_confidence: number }[]
+  >([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await axios.get(backend_uri + "/analytics");
+        const dupeResponse = await axios.get(
+          backend_uri + "/duplicate-analytics"
+        );
+        if (Array.isArray(dupeResponse.data)) {
+          setDuplicateConfidenceData(dupeResponse.data);
+          const dupeRequestsPerDay = Object.entries(
+            dupeResponse.data.reduce((acc, { timestamp }) => {
+              const date = new Date(timestamp).toLocaleDateString();
+              acc[date] = (acc[date] || 0) + 1;
+              return acc;
+            }, {} as Record<string, number>)
+          ).map(([date, count]) => ({ date, count: Number(count) }));
+          console.log(dupeRequestsPerDay);
+          setDupeRequestsPerDay(dupeRequestsPerDay);
+        } else {
+          console.error(
+            "Fetched duplicate data is not an array:",
+            dupeResponse.data
+          );
+        }
+
         if (Array.isArray(response.data)) {
           setData(response.data);
 
@@ -163,6 +152,9 @@ const Dashboard = () => {
   const [requestsPerDay, setRequestsPerDay] = useState<
     { date: string; count: number }[]
   >([]);
+  const [dupeRequestsPerDay, setDupeRequestsPerDay] = useState<
+    { date: string; count: number }[]
+  >([]);
   const [requestTypeChartConfig, setRequestTypeChartConfig] =
     useState<ChartConfig>({});
   const [supportGroupCount, setSupportGroupCount] = useState<
@@ -175,7 +167,7 @@ const Dashboard = () => {
   return (
     <>
       {dataLoaded ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4">
           {/* Request Type Distribution */}
           <Card>
             <CardHeader>
@@ -325,8 +317,65 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
+          {/* Duplicate Requests Per Day */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-2xl">
+                Duplicate Requests Per Day
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={chartConfig}>
+                <BarChart data={dupeRequestsPerDay}>
+                  <CartesianGrid vertical={false} />
+                  <XAxis dataKey="timestamp" tickLine={false} tickMargin={10} />
+                  <YAxis />
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent hideLabel />}
+                  />
+                  <Bar dataKey="count" radius={10}>
+                    {dupeRequestsPerDay.map((_, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={`hsl(var(--chart-${(index % 5) + 1}))`}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+
+          {/* Duplicate Requests Confidence Trend */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-2xl">
+                Duplicate Requests Confidence Trend
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer
+                config={chartConfig}
+                className="min-h-[200px] w-full"
+              >
+                <AreaChart data={duplicateConfidenceData}>
+                  <CartesianGrid vertical={false} />
+                  <XAxis dataKey="timestamp" />
+                  <YAxis dataKey="duplicate_confidence" />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Area
+                    type="monotone"
+                    dataKey="duplicate_confidence"
+                    stroke={`hsl(var(--chart-1))`}
+                    fill={`hsl(var(--chart-1))`}
+                  />
+                </AreaChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
           {/* Recent Requests Table */}
-          <Card className="col-span-1 md:col-span-2">
+          <Card className="col-span-1 md:col-span-3">
             <CardHeader>
               <CardTitle className="text-2xl">Recent Requests</CardTitle>
             </CardHeader>
@@ -353,7 +402,7 @@ const Dashboard = () => {
                 </TableHeader>
                 <TableBody>
                   {data.map((req, index) => (
-                    <TableRow key={'index-'+index}>
+                    <TableRow key={"index-" + index}>
                       <TableCell className="border-1">
                         {req.request_type}
                       </TableCell>

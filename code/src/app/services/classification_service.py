@@ -11,6 +11,8 @@ from app.models.response_models import ClassificationResponse, RequestTypeResult
 from app.schemas.request_types import request_type_collection
 from app.schemas.analytics import analytics_collection
 from datetime import datetime
+from app.schemas.analytics import duplicate_analytics_collection
+
 
 logger = logging.getLogger(__name__)
 
@@ -237,6 +239,12 @@ class ClassificationService:
             )
             
             if is_duplicate:
+                await duplicate_analytics_collection.insert_one(
+                    {
+                        "duplicate_confidence": confidence_score,
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                )
                 logger.info(f"Duplicate email detected: {duplicate_reason} (confidence: {confidence_score:.2f})")
                 if confidence_score > 0.8:
                     return ClassificationResponse(

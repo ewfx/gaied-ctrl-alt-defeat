@@ -10,4 +10,9 @@ class Analytics(BaseModel):
     confidence: float
     timestamp: str = datetime.now().isoformat()
 
+class DuplicateAnalytics(BaseModel):
+    timestamp: str = datetime.now().isoformat()
+    duplicate_confidence: float
+
 analytics_collection = db['analytics']
+duplicate_analytics_collection = db['duplicate_analytics']
