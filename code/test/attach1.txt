@@ -1,0 +1,4 @@
+Request ID,Request Type,Sub Request Type,Account Number,Amount,Description,Date
+REQ12345,Adjustment,Reallocation Principal,987654321,50000,Reallocating principal and amending associated fees,2025-03-24
+REQ12345,Adjustment,Amendment Fees,987654321,200,Adjustment for amendment fees,2025-03-24
+REQ12345,Adjustment,AU Transfer,987654321,10000,Transfer of funds related to loan restructuring,2025-03-24
