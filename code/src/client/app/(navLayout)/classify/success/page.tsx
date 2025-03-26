@@ -15,6 +15,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import { FileWarning } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -54,6 +55,7 @@ export default function ClassifySuccess() {
     }[];
     is_duplicate: boolean;
     duplicate_reason?: string | null;
+    duplicate_confidence: number;
     processing_time_ms: number;
     error?: string | null;
   }
@@ -71,9 +73,9 @@ export default function ClassifySuccess() {
             {data.request_types[0].request_type} -{" "}
             {data.request_types[0].sub_request_type}
           </p> */}
-          <div className="text-xl font-semibold">Support Group  - <i>{data.support_group}</i></div>
-
-          
+          <div className="text-xl font-semibold">
+            Support Group - <i>{data.support_group}</i>
+          </div>
 
           <Separator />
           <Table className="border-1">
@@ -153,6 +155,23 @@ export default function ClassifySuccess() {
               ))}
             </TableBody>
           </Table>
+          <Card className="p-8 bg-yellow-300/10">
+            <div className="text-2xl font-semibold flex items-baseline gap-2">
+              <FileWarning /> Potential Duplicate request
+            </div>
+            <Separator />
+            <div className="space-y-4 mt-2">
+              <p>
+                A duplicate file has been detected with a confidence of{" "}
+                <span className="font-bold">
+                  {data.duplicate_confidence.toFixed(3)}%
+                </span>
+                .
+              </p>
+              <div className="font-semibold text-lg">Reason:</div>
+              <div>{data.duplicate_reason}</div>
+            </div>
+          </Card>
         </CardContent>
         <CardFooter className="gap-4">
           {/* <Button size="lg" variant={"outline"}>

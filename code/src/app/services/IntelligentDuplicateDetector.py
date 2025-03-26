@@ -452,7 +452,7 @@ class IntelligentDuplicateDetector:
                 return True, reason, best_match['score'], best_match['id']
             
             # Medium confidence duplicate
-            elif best_match['score'] >= 0.7:
+            elif best_match['score'] >= 0.5:
                 reason = f"Likely duplicate of email from {best_match['sender']}"
                 if best_match['received_date']:
                     reason += f" (received: {best_match['received_date'].isoformat() if isinstance(best_match['received_date'], datetime) else best_match['received_date']})"

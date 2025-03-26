@@ -98,7 +98,7 @@ export default function RequestTypeList() {
   };
 
   return (
-    <Card className="min-w-1/2 h-fit">
+    <Card className="w-3/4 h-fit ">
       <CardHeader>
         <CardTitle className="text-2xl">Configure Request Types</CardTitle>
         <CardDescription>

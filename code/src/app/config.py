@@ -25,9 +25,9 @@ class Settings(BaseSettings):
     max_attachment_size_mb: int = Field(default=10, env="MAX_ATTACHMENT_SIZE_MB")
     
     # IntelligentDuplicateDetector settings
-    semantic_threshold: float = Field(default=0.85, env="SEMANTIC_THRESHOLD")
+    semantic_threshold: float = Field(default=0.8, env="SEMANTIC_THRESHOLD")
     metadata_weight: float = Field(default=0.25, env="METADATA_WEIGHT")
-    subject_weight: float = Field(default=0.3, env="SUBJECT_WEIGHT")
+    subject_weight: float = Field(default=0.45, env="SUBJECT_WEIGHT")
     content_weight: float = Field(default=0.9, env="CONTENT_WEIGHT")
     time_window_hours: int = Field(default=72, env="TIME_WINDOW_HOURS")
     

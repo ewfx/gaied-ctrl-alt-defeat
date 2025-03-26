@@ -238,16 +238,17 @@ class ClassificationService:
             
             if is_duplicate:
                 logger.info(f"Duplicate email detected: {duplicate_reason} (confidence: {confidence_score:.2f})")
-                return ClassificationResponse(
-                    request_types=[],
-                    extracted_fields=[],
-                    support_group="",
-                    is_duplicate=True,
-                    duplicate_reason=duplicate_reason,
-                    duplicate_confidence=confidence_score,
-                    duplicate_id=duplicate_id,
-                    processing_time_ms=(time.time() - start_time) * 1000
-                )
+                if confidence_score > 0.8:
+                    return ClassificationResponse(
+                        request_types=[],
+                        extracted_fields=[],
+                        support_group="",
+                        is_duplicate=True,
+                        duplicate_reason=duplicate_reason,
+                        duplicate_confidence=confidence_score,
+                        duplicate_id=duplicate_id,
+                        processing_time_ms=(time.time() - start_time) * 1000
+                    )
             
             # Get request types from MongoDB
             request_types = await self._get_request_types_from_db()
@@ -312,10 +313,10 @@ class ClassificationService:
                 request_types=request_type_results,
                 extracted_fields=extracted_fields,
                 support_group=support_group,
-                is_duplicate=False,
-                duplicate_reason=None,
-                duplicate_confidence=0.0,
-                duplicate_id=None,
+                is_duplicate=is_duplicate,
+                duplicate_reason=duplicate_reason,
+                duplicate_confidence=confidence_score,
+                duplicate_id=duplicate_id,
                 processing_time_ms=processing_time
             )
                 
