@@ -48,11 +48,11 @@ A powerful API for automatically classifying commercial bank lending service ema
 
 ![configure page](artifacts/demo/Images/configure_request_types.jpeg)
 
-### Analysis page
+### Analytics page
 
 ![analysis page](artifacts/demo/Images/analysis_diagrams.jpeg)
 
-### Analysis page recent requests
+### Analytics page recent requests
 
 ![analysis page_recent_requests](artifacts/demo/Images/recent_requests.jpeg)
 
