@@ -272,13 +272,13 @@ const Dashboard = () => {
               <ChartContainer config={chartConfig}>
                 <BarChart accessibilityLayer data={supportGroupCount}>
                   <CartesianGrid vertical={false} />
-                  <XAxis dataKey="name" tickLine={false} tickMargin={10} />
+                  <XAxis dataKey="name" tickLine={false} hide={true} tickMargin={10} />
                   <YAxis />
                   <ChartTooltip
                     cursor={false}
-                    content={<ChartTooltipContent hideLabel />}
+                    content={<ChartTooltipContent />}
                   />
-                  <Bar dataKey="value" radius={10}>
+                  <Bar dataKey="value" radius={10} >
                     {supportGroupCount.map((_, index) => (
                       <Cell
                         key={`cell-${index}`}
@@ -331,7 +331,7 @@ const Dashboard = () => {
               >
                 <AreaChart data={confidenceData}>
                   <CartesianGrid vertical={false} />
-                  <XAxis dataKey="name" />
+                  {/* <XAxis dataKey="name" /> */}
                   <YAxis dataKey="confidence" />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Area
@@ -356,7 +356,7 @@ const Dashboard = () => {
               <ChartContainer config={chartConfig}>
                 <BarChart data={dupeRequestsPerDay}>
                   <CartesianGrid vertical={false} />
-                  <XAxis dataKey="timestamp" tickLine={false} tickMargin={10} />
+                  <XAxis dataKey="date" tickLine={false} tickMargin={10} />
                   <YAxis />
                   <ChartTooltip
                     cursor={false}
@@ -389,7 +389,7 @@ const Dashboard = () => {
               >
                 <AreaChart data={duplicateConfidenceData}>
                   <CartesianGrid vertical={false} />
-                  <XAxis dataKey="timestamp" />
+                  {/* <XAxis dataKey="timestamp" /> */}
                   <YAxis dataKey="duplicate_confidence" />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Area
