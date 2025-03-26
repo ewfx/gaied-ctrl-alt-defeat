@@ -6,6 +6,7 @@ import time
 from app.models.response_models import ClassificationResponse
 from app.services.classification_service import ClassificationService
 from app.config import get_settings
+from app.services.IntelligentDuplicateDetector import LRUCache
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -15,6 +16,7 @@ router = APIRouter()
 
 # Get settings
 settings = get_settings()
+lru_cache = LRUCache(capacity=settings.duplicate_cache_size)
 
 # Create a function to get a ClassificationService instance
 def get_classification_service():
@@ -22,14 +24,26 @@ def get_classification_service():
     from app.core.llm_handler import LLMHandler
     from app.core.api_manager import ApiManager
     from app.services.email_processor import EmailProcessor
-    from app.services.duplicate_detector import DuplicateDetector
+    from app.services.IntelligentDuplicateDetector import IntelligentDuplicateDetector
     from app.services.data_extractor import DataExtractor
     
     # Create service dependencies
     api_manager = ApiManager()
     llm_handler = LLMHandler(api_manager=api_manager)
     email_processor = EmailProcessor(max_attachment_size_mb=settings.max_attachment_size_mb)
-    duplicate_detector = DuplicateDetector(cache_duration_days=settings.duplicate_cache_days)
+    
+    # Initialize the IntelligentDuplicateDetector with appropriate settings
+    duplicate_detector = IntelligentDuplicateDetector(
+        cache_duration_days=settings.duplicate_cache_days,
+        cache_size=settings.duplicate_cache_size,
+        semantic_threshold=settings.semantic_threshold,
+        metadata_weight=settings.metadata_weight,
+        subject_weight=settings.subject_weight,
+        content_weight=settings.content_weight,
+        time_window_hours=settings.time_window_hours,
+        email_cache=lru_cache
+    )
+    
     data_extractor = DataExtractor(llm_handler=llm_handler)
     
     # Create and return a ClassificationService instance

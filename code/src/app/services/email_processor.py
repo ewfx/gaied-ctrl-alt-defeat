@@ -1,11 +1,13 @@
 import os
 import io
 import re
-import email
+import email as email_module  # Renamed the import to avoid conflict
 from typing import List, Dict, Any, Tuple
 from email.parser import Parser
 from email.policy import default
 import logging
+from datetime import datetime
+import socket
 
 # Document processing
 import pypdf
@@ -31,7 +33,7 @@ class EmailProcessor:
                            email_chain_content: bytes,
                            email_chain_filename: str,
                            email_chain_content_type: str,
-                           attachments: List[Dict[str, Any]] = None) -> Tuple[Dict[str, str], List[Dict[str, str]]]:
+                           attachments: List[Dict[str, Any]] = None) -> Tuple[Dict[str, Any], List[Dict[str, str]]]:
         """
         Process email chain from PDF and separate attachments
         """
@@ -45,12 +47,22 @@ class EmailProcessor:
             # If metadata extraction fails, use filename as subject
             email_info["subject"] = os.path.splitext(email_chain_filename)[0]
         
+        # Add additional fields for IntelligentDuplicateDetector
+        email_info["content"] = email_text
+        email_info["recipient"] = self._extract_recipient_from_text(email_text)
+        
+        # Add default values for additional IntelligentDuplicateDetector fields
+        self._add_default_metadata_fields(email_info)
+        
+        # Try to extract IP address information (if available)
+        email_info["ip_address"] = self._extract_ip_address_from_text(email_text)
+        
         # Process attachments if any
         processed_attachments = []
         if attachments:
             for idx, attachment in enumerate(attachments):
                 try:
-                    logger.info(f"Attachment; {attachment['filename']}")
+                    logger.info(f"Processing attachment: {attachment['filename']}")
                     # Check attachment size
                     if len(attachment["content"]) > self.max_attachment_size:
                         logger.warning(f"Attachment too large: {attachment['filename']} ({len(attachment['content'])/1024/1024:.2f} MB)")
@@ -79,22 +91,44 @@ class EmailProcessor:
         
         return email_info, processed_attachments
     
-    def process_eml(self, eml_content: bytes) -> Tuple[Dict[str, str], List[Dict[str, str]]]:
+    def process_eml(self, eml_content: bytes) -> Tuple[Dict[str, Any], List[Dict[str, str]]]:
         """
         Process EML file containing email with attachments
+        Enhanced to extract detailed metadata for IntelligentDuplicateDetector
         """
         try:
             # Parse the EML content
             eml_text = eml_content.decode('utf-8', errors='ignore')
-            email_message = email.message_from_string(eml_text, policy=default)
+            email_message = email_module.message_from_string(eml_text, policy=default)  # Use renamed module
             
             # Extract metadata
             email_info = {
                 "sender": str(email_message.get("From", "")),
                 "subject": str(email_message.get("Subject", "")),
                 "received_date": str(email_message.get("Date", "")),
-                "content": ""
+                "content": "",
+                "recipient": str(email_message.get("To", "")),
+                "message_id": str(email_message.get("Message-ID", "")),
+                "in_reply_to": str(email_message.get("In-Reply-To", "")),
+                "references": self._parse_references_header(str(email_message.get("References", ""))),
+                "thread_id": None  # Will be derived later
             }
+            
+            # Extract other headers that might contain IP information
+            received_headers = email_message.get_all("Received")
+            if received_headers:
+                email_info["ip_address"] = self._extract_ip_from_received_headers(received_headers)
+            else:
+                email_info["ip_address"] = None
+            
+            # Extract additional headers for metadata
+            additional_metadata = {}
+            for header in ["X-Mailer", "User-Agent", "X-Originating-IP", "X-Forwarded-For"]:
+                if email_message.get(header):
+                    additional_metadata[header] = str(email_message.get(header))
+            
+            if additional_metadata:
+                email_info["additional_metadata"] = additional_metadata
             
             # Extract email body and attachments
             processed_attachments = []
@@ -164,6 +198,23 @@ class EmailProcessor:
             # Clean the extracted text
             email_info["content"] = self._clean_text(email_info["content"])
             
+            # Derive thread_id if available
+            if email_info["references"] and len(email_info["references"]) > 0:
+                email_info["thread_id"] = email_info["references"][0]  # Use first reference as thread ID
+            elif email_info["in_reply_to"]:
+                email_info["thread_id"] = email_info["in_reply_to"]
+            
+            # Normalize received_date to ISO format if possible
+            if email_info["received_date"]:
+                try:
+                    # Try to parse date with email.utils
+                    import email.utils
+                    parsed_date = email_module.utils.parsedate_to_datetime(email_info["received_date"])
+                    if parsed_date:
+                        email_info["received_date"] = parsed_date.isoformat()
+                except Exception as date_error:
+                    logger.warning(f"Could not parse received date: {date_error}")
+            
             return email_info, processed_attachments
             
         except Exception as e:
@@ -172,10 +223,47 @@ class EmailProcessor:
             email_info = {
                 "sender": "Unknown",
                 "subject": "Unknown",
-                "received_date": "",
-                "content": self.process_email_content(eml_content.decode('utf-8', errors='ignore'))
+                "received_date": datetime.now().isoformat(),
+                "content": self.process_email_content(eml_content.decode('utf-8', errors='ignore')),
+                "recipient": "",
+                "message_id": None,
+                "references": [],
+                "in_reply_to": None,
+                "thread_id": None,
+                "ip_address": None
             }
             return email_info, []
+    
+    def _parse_references_header(self, references_header: str) -> List[str]:
+        """Parse References header into a list of message IDs"""
+        if not references_header:
+            return []
+        
+        # Split by whitespace and filter empty strings
+        return [ref.strip() for ref in re.split(r'\s+', references_header) if ref.strip()]
+    
+    def _extract_ip_from_received_headers(self, received_headers: List[str]) -> str:
+        """Extract IP address from Received headers"""
+        for header in received_headers:
+            # Look for patterns like [ip.address], ip.address, or 'from' ip.address
+            ip_patterns = [
+                r'\[(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\]',
+                r'from\s+(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})',
+                r'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
+            ]
+            
+            for pattern in ip_patterns:
+                match = re.search(pattern, header)
+                if match:
+                    ip = match.group(1)
+                    # Validate it's a real IP address
+                    try:
+                        socket.inet_aton(ip)
+                        return ip
+                    except socket.error:
+                        continue
+        
+        return None
     
     def process_attachment(self, 
                           content: bytes, 
@@ -201,7 +289,7 @@ class EmailProcessor:
             elif file_extension in ['.htm', '.html']:
                 return self._extract_text_from_html(content.decode('utf-8', errors='ignore'))
             elif file_extension in ['.jpg', '.jpeg', '.png', '.gif', '.bmp']:
-                # Image files - return placeholder
+                # Image files - extract text with OCR
                 return self._extract_text_from_image(content)
             else:
                 # Check content type as fallback
@@ -265,15 +353,20 @@ class EmailProcessor:
         
         return text
     
-    def _extract_email_metadata_from_text(self, text: str) -> Dict[str, str]:
+    def _extract_email_metadata_from_text(self, text: str) -> Dict[str, Any]:
         """
-        Extract email metadata (sender, subject, date) from text content
+        Extract email metadata (sender, subject, date, message-id, etc.) from text content
         """
         metadata = {
             "sender": "",
             "subject": "",
             "received_date": "",
-            "content": text
+            "recipient": "",
+            "message_id": None,
+            "in_reply_to": None,
+            "references": [],
+            "thread_id": None,
+            "ip_address": None
         }
         
         # Try to extract common email headers
@@ -288,8 +381,108 @@ class EmailProcessor:
         date_match = re.search(r'Date:\s*([^\n]+)', text, re.IGNORECASE)
         if date_match:
             metadata["received_date"] = date_match.group(1).strip()
+            # Try to normalize date format if possible
+            try:
+                # Use email_module instead of email directly
+                parsed_date = email_module.utils.parsedate_to_datetime(metadata["received_date"])
+                if parsed_date:
+                    metadata["received_date"] = parsed_date.isoformat()
+            except Exception:
+                pass  # Keep original format if parsing fails
+        
+        # Extract recipient
+        to_match = re.search(r'To:\s*([^\n]+)', text, re.IGNORECASE)
+        if to_match:
+            metadata["recipient"] = to_match.group(1).strip()
+        
+        # Extract Message-ID
+        msgid_match = re.search(r'Message-ID:\s*([^\n]+)', text, re.IGNORECASE)
+        if msgid_match:
+            metadata["message_id"] = msgid_match.group(1).strip()
+        
+        # Extract In-Reply-To
+        reply_match = re.search(r'In-Reply-To:\s*([^\n]+)', text, re.IGNORECASE)
+        if reply_match:
+            metadata["in_reply_to"] = reply_match.group(1).strip()
+        
+        # Extract References
+        ref_match = re.search(r'References:\s*([^\n]+)', text, re.IGNORECASE)
+        if ref_match:
+            refs = ref_match.group(1).strip()
+            metadata["references"] = [r.strip() for r in re.split(r'\s+', refs) if r.strip()]
+        
+        # Extract thread ID if available, or derive it
+        if metadata["references"] and len(metadata["references"]) > 0:
+            metadata["thread_id"] = metadata["references"][0]
+        elif metadata["in_reply_to"]:
+            metadata["thread_id"] = metadata["in_reply_to"]
+        
+        # Extract IP address
+        metadata["ip_address"] = self._extract_ip_address_from_text(text)
         
         return metadata
+    
+    def _extract_recipient_from_text(self, text: str) -> str:
+        """Extract recipient from email text"""
+        to_match = re.search(r'To:\s*([^\n]+)', text, re.IGNORECASE)
+        if to_match:
+            return to_match.group(1).strip()
+        
+        # Try alternative patterns
+        cc_match = re.search(r'Cc:\s*([^\n]+)', text, re.IGNORECASE)
+        if cc_match:
+            return cc_match.group(1).strip()
+        
+        # Extract any email address pattern as a last resort
+        email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', text)
+        if email_match and email_match.group(0) not in text.split("From:", 1)[0]:
+            return email_match.group(0)
+        
+        return ""
+    
+    def _extract_ip_address_from_text(self, text: str) -> str:
+        """Extract IP address from email text"""
+        # Look for common patterns that contain IP addresses
+        ip_patterns = [
+            r'Received:.*?\[(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\]',
+            r'X-Originating-IP:\s*\[?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\]?',
+            r'from\s+(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
+        ]
+        
+        for pattern in ip_patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                ip = match.group(1)
+                # Validate it's a real IP address
+                try:
+                    socket.inet_aton(ip)
+                    return ip
+                except socket.error:
+                    continue
+        
+        return None
+    
+    def _add_default_metadata_fields(self, email_info: Dict[str, Any]) -> None:
+        """Add default metadata fields required by IntelligentDuplicateDetector if missing"""
+        # Ensure all required fields exist
+        if "message_id" not in email_info:
+            email_info["message_id"] = None
+            
+        if "references" not in email_info:
+            email_info["references"] = []
+            
+        if "in_reply_to" not in email_info:
+            email_info["in_reply_to"] = None
+            
+        if "thread_id" not in email_info:
+            email_info["thread_id"] = None
+            
+        if "ip_address" not in email_info:
+            email_info["ip_address"] = None
+            
+        # Set current time as received_date if not present
+        if not email_info.get("received_date"):
+            email_info["received_date"] = datetime.now().isoformat()
     
     def _extract_text_from_pdf(self, content: bytes) -> str:
         """Extract text from PDF file content"""

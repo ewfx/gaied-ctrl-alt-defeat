@@ -1,13 +1,13 @@
 import json
 import time
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Tuple
 from langchain.schema.messages import SystemMessage, HumanMessage
 from app.core.llm_handler import LLMHandler
 from app.services.email_processor import EmailProcessor
-from app.services.duplicate_detector import DuplicateDetector
+from app.services.IntelligentDuplicateDetector import IntelligentDuplicateDetector  
 from app.services.data_extractor import DataExtractor
-from app.models.response_models import ClassificationResponse, RequestTypeResult
+from app.models.response_models import ClassificationResponse, RequestTypeResult, ExtractedField
 from app.schemas.request_types import request_type_collection
 from app.schemas.analytics import analytics_collection
 from datetime import datetime
@@ -22,7 +22,7 @@ class ClassificationService:
     def __init__(self, 
                 llm_handler: LLMHandler,
                 email_processor: EmailProcessor,
-                duplicate_detector: DuplicateDetector,
+                duplicate_detector: IntelligentDuplicateDetector,  # Updated type
                 data_extractor: DataExtractor):
         """
         Initialize the classification service
@@ -31,7 +31,7 @@ class ClassificationService:
         self.email_processor = email_processor
         self.duplicate_detector = duplicate_detector
         self.data_extractor = data_extractor
-        logger.info("Classification service initialized")
+        logger.info("Classification service initialized with IntelligentDuplicateDetector")
     
     async def process_email_chain(self,
                               email_chain_file: bytes,
@@ -64,24 +64,44 @@ class ClassificationService:
                 attachments
             )
             
-            # Extract metadata
+            # Extract metadata for IntelligentDuplicateDetector
             sender = email_info.get("sender", "Unknown")
             subject = email_info.get("subject", "Unknown")
+            recipient = email_info.get("recipient", "")
             received_date = email_info.get("received_date", "")
             processed_email = email_info.get("content", "")
+            message_id = email_info.get("message_id")
+            references = email_info.get("references", [])
+            in_reply_to = email_info.get("in_reply_to")
+            email_thread_id = email_info.get("thread_id") or thread_id
+            ip_address = email_info.get("ip_address")
+            additional_metadata = email_info.get("additional_metadata", {})
             
-            # Check for duplicates
-            is_duplicate, duplicate_reason = self.duplicate_detector.check_duplicate(
-                processed_email, sender, subject, thread_id
+            # Check for duplicates with IntelligentDuplicateDetector
+            is_duplicate, duplicate_reason, confidence_score, duplicate_id = self.duplicate_detector.check_duplicate(
+                processed_email, 
+                sender, 
+                subject,
+                recipient,
+                received_date,
+                message_id,
+                references,
+                in_reply_to,
+                email_thread_id,
+                ip_address,
+                additional_metadata
             )
             
             if is_duplicate:
-                logger.info(f"Duplicate email detected: {duplicate_reason}")
+                logger.info(f"Duplicate email detected: {duplicate_reason} (confidence: {confidence_score:.2f})")
                 return ClassificationResponse(
                     request_types=[],
                     extracted_fields=[],
+                    support_group="",
                     is_duplicate=True,
                     duplicate_reason=duplicate_reason,
+                    duplicate_confidence=confidence_score,
+                    duplicate_id=duplicate_id,
                     processing_time_ms=(time.time() - start_time) * 1000
                 )
             
@@ -133,7 +153,7 @@ class ClassificationService:
             if not primary_request:
                 primary_request = request_types[0]
             
-            
+            # Record analytics
             await analytics_collection.insert_one(
                 {
                     "request_type": primary_request.request_type,
@@ -150,6 +170,8 @@ class ClassificationService:
                 support_group=support_group,
                 is_duplicate=False,
                 duplicate_reason=None,
+                duplicate_confidence=0.0,
+                duplicate_id=None,
                 processing_time_ms=processing_time
             )
                 
@@ -163,6 +185,8 @@ class ClassificationService:
                 support_group="",
                 is_duplicate=False,
                 duplicate_reason=None,
+                duplicate_confidence=0.0,
+                duplicate_id=None,
                 processing_time_ms=processing_time,
                 error=f"Error processing email chain: {str(e)}"
             )
@@ -184,24 +208,44 @@ class ClassificationService:
             logger.info("Processing email from EML file")
             email_info, processed_attachments = self.email_processor.process_eml(eml_content)
             
-            # Extract metadata
+            # Extract metadata for IntelligentDuplicateDetector
             sender = email_info.get("sender", "Unknown")
             subject = email_info.get("subject", "Unknown")
+            recipient = email_info.get("recipient", "")
             received_date = email_info.get("received_date", "")
             processed_email = email_info.get("content", "")
+            message_id = email_info.get("message_id")
+            references = email_info.get("references", [])
+            in_reply_to = email_info.get("in_reply_to")
+            email_thread_id = email_info.get("thread_id") or thread_id
+            ip_address = email_info.get("ip_address")
+            additional_metadata = email_info.get("additional_metadata", {})
             
-            # Check for duplicates
-            is_duplicate, duplicate_reason = self.duplicate_detector.check_duplicate(
-                processed_email, sender, subject, thread_id
+            # Check for duplicates with IntelligentDuplicateDetector
+            is_duplicate, duplicate_reason, confidence_score, duplicate_id = self.duplicate_detector.check_duplicate(
+                processed_email, 
+                sender, 
+                subject,
+                recipient,
+                received_date,
+                message_id,
+                references,
+                in_reply_to,
+                email_thread_id,
+                ip_address,
+                additional_metadata
             )
             
             if is_duplicate:
-                logger.info(f"Duplicate email detected: {duplicate_reason}")
+                logger.info(f"Duplicate email detected: {duplicate_reason} (confidence: {confidence_score:.2f})")
                 return ClassificationResponse(
                     request_types=[],
                     extracted_fields=[],
+                    support_group="",
                     is_duplicate=True,
                     duplicate_reason=duplicate_reason,
+                    duplicate_confidence=confidence_score,
+                    duplicate_id=duplicate_id,
                     processing_time_ms=(time.time() - start_time) * 1000
                 )
             
@@ -253,7 +297,7 @@ class ClassificationService:
             if not primary_request:
                 primary_request = request_types[0]
             
-            
+            # Record analytics
             await analytics_collection.insert_one(
                 {
                     "request_type": primary_request.request_type,
@@ -264,13 +308,14 @@ class ClassificationService:
                 }
             )
             
-            
             return ClassificationResponse(
                 request_types=request_type_results,
                 extracted_fields=extracted_fields,
                 support_group=support_group,
                 is_duplicate=False,
                 duplicate_reason=None,
+                duplicate_confidence=0.0,
+                duplicate_id=None,
                 processing_time_ms=processing_time
             )
                 
@@ -284,6 +329,8 @@ class ClassificationService:
                 support_group="",
                 is_duplicate=False,
                 duplicate_reason=None,
+                duplicate_confidence=0.0,
+                duplicate_id=None,
                 processing_time_ms=processing_time,
                 error=f"Error processing EML: {str(e)}"
             )
@@ -305,7 +352,7 @@ class ClassificationService:
             logger.error(f"Error retrieving request types from database: {str(e)}")
             return []
     
-    async def _get_required_attributes(self, request_type_name: str, sub_request_type_name: str) -> List[str]:
+    async def _get_required_attributes(self, request_type_name: str, sub_request_type_name: str) -> Tuple[List[str], str]:
         """
         Get required attributes and support group for a specific request type and sub-request type
         """
