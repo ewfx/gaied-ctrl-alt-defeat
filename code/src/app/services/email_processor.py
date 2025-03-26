@@ -214,7 +214,13 @@ class EmailProcessor:
                         email_info["received_date"] = parsed_date.isoformat()
                 except Exception as date_error:
                     logger.warning(f"Could not parse received date: {date_error}")
-            
+
+                # Make sure to use a timezone-aware datetime
+                if not email_info.get("received_date"):
+                    # Use timezone-aware datetime
+                    from datetime import datetime, timezone
+                    email_info["received_date"] = datetime.now(timezone.utc).isoformat()
+                            
             return email_info, processed_attachments
             
         except Exception as e:

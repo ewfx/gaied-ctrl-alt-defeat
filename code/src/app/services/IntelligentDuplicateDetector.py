@@ -360,6 +360,17 @@ class IntelligentDuplicateDetector:
                     entry_time = None
             
             if entry_time and isinstance(received_date, datetime):
+                # Ensure both datetime objects are comparable (both naive or both aware)
+                if received_date.tzinfo is not None and entry_time.tzinfo is None:
+                    # Convert entry_time to UTC to match received_date
+                    from datetime import timezone
+                    entry_time = entry_time.replace(tzinfo=timezone.utc)
+                elif received_date.tzinfo is None and entry_time.tzinfo is not None:
+                    # Convert received_date to UTC to match entry_time
+                    from datetime import timezone
+                    received_date = received_date.replace(tzinfo=timezone.utc)
+                
+                # Now they can be safely compared
                 time_diff = abs(received_date - entry_time)
                 logger.info(f"Time difference: {time_diff.total_seconds()/3600:.2f} hours")
                 
