@@ -45,6 +45,8 @@ class ClassificationResponse(BaseModel):
     support_group: str
     is_duplicate: bool = False
     duplicate_reason: Optional[str] = None
+    duplicate_confidence: float = Field(default=0.0, ge=0.0, le=1.0, description="Confidence score for duplicate detection")
+    duplicate_id: Optional[str] = Field(default=None, description="ID of the matched duplicate if found")
     processing_time_ms: Optional[float] = None
     error: Optional[str] = None
     
@@ -76,6 +78,8 @@ class ClassificationResponse(BaseModel):
                 ],
                 "is_duplicate": False,
                 "duplicate_reason": None,
+                "duplicate_confidence": 0.0,
+                "duplicate_id": None,
                 "processing_time_ms": 1250.5
             }
         }
