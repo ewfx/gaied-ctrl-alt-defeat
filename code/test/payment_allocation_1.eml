@@ -1,0 +1,17 @@
+From: borrower1@example.com
+To: loansupport@examplebank.com
+Subject: Loan Payment Allocation Request
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+
+Dear Loan Support,
+
+I recently made a payment towards my loan, and I want to ensure that the entire amount is applied directly to the principal balance. Please confirm that no portion of this payment is allocated to interest or any fees.
+
+Loan Account Number: 1234567890
+Payment Amount: $5,000
+
+Kindly confirm once the allocation is complete.
+
+Best regards,  
+John Doe
