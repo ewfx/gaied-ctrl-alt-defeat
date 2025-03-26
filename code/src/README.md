@@ -15,32 +15,20 @@ This project provides an API for automatically classifying commercial bank lendi
 ## Project Structure
 
 ```
-email-classification-system/
-│
-├── app/                           # Main application code
-│   ├── __init__.py
-│   ├── main.py                    # FastAPI app entry point
-│   ├── config.py                  # Configuration settings
-│   ├── api/                       # API endpoints
-│   │   ├── __init__.py
-│   │   └── routes.py              # API routes
-│   ├── core/                      # Core functionality
-│   │   ├── __init__.py
-│   │   ├── api_manager.py         # API key management
-│   │   └── llm_handler.py         # LLM integration
-│   ├── models/                    # Data models
-│   │   ├── __init__.py
-│   │   ├── request_models.py      # Request data models
-│   │   └── response_models.py     # Response data models
-│   ├── services/                  # Business logic services
-│   │   ├── __init__.py
-│   │   ├── email_processor.py     # Email and attachment processing
-│   │   ├── classification_service.py # Classification orchestration
-│   │   ├── duplicate_detector.py  # Duplicate email detection
-│   │   └── data_extractor.py      # Field extraction from emails
-│   └── data/                      # Configuration data
-│       ├── request_types.json     # Request type definitions
-│       └── extraction_rules.json  # Field extraction rules
+gaied-ctrl-alt-defeat/
+├── artifacts
+│   ├── arch         # Architecture documentation
+│   └── demo         # Demo materials
+├── code
+│   ├── src
+│   │   ├── app      # Python backend
+│   │   ├── client   # Next.js frontend
+│   │   ├── Dockerfile
+│   │   ├── llm-config.json
+│   │   └── requirements.txt
+│   └── test         # Test files
+├── LICENSE
+└── README.md
 ```
 
 ## Setup Instructions
@@ -48,194 +36,78 @@ email-classification-system/
 ### Prerequisites
 
 - Python 3.10 or higher
-- API keys for LLM services (Anthropic, OpenAI, etc.)
+- Node.js 18.0 or higher
+- API keys for LLM services (if applicable)
 
-### Installation
+### Backend Setup
 
-1. Clone the repository:
+1. Create a virtual environment:
    ```bash
-   git clone https://github.com/yourusername/email-classification-system.git
-   cd email-classification-system
+   python -m venv hackathon
+   source hackathon/bin/activate  # On Windows: hackathon\Scripts\activate
+   # For fish shell:
+   source hackathon/bin/activate.fish
    ```
 
-2. Create a virtual environment:
+2. Navigate to the source directory:
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   cd gaied-ctrl-alt-defeat/code/src/
    ```
 
-3. Install dependencies:
+3. Create a `.env` file in the app directory:
    ```bash
+   cd app
+   touch .env
+   ```
+
+4. Add the following environment variables to the `.env` file:
+   ```
+   # Anthropic API keys
+   OPENROUTER_API_KEY_10_1_1=your_open_router_key_1
+   OPENROUTER_API_KEY_10_1_2=your_open_router_key_2
+
+   # Application settings
+   PORT=8000
+   LOG_LEVEL=INFO
+   DUPLICATE_CACHE_DAYS=7
+   MONGO_URI=mongodb+srv://your_database_url/
+
+   DB_NAME=your_database_name
+   ```
+
+5. Navigate back to the src directory and install dependencies:
+   ```bash
+   cd ..
    pip install -r requirements.txt
    ```
 
-4. Create a `.env` file based on the provided `.env.example`:
+6. Start the server:
    ```bash
-   cp .env.example .env
+   python -m app.main
    ```
 
-5. Edit the `.env` file with your API keys and configuration.
+   The API will be available at `http://localhost:8000` and the Swagger documentation at `http://localhost:8000/docs`.
 
-### Running the Application
+### Frontend Setup
 
-Start the FastAPI server:
+1. Navigate to the client directory:
+   ```bash
+   cd gaied-ctrl-alt-defeat/code/src/client
+   ```
 
-```bash
-python -m app.main
-```
+2. Install dependencies:
+   ```bash
+   npm i --force
+   ```
 
-The API will be available at `http://localhost:8000` and the Swagger documentation at `http://localhost:8000/docs`.
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
 
-## API Usage
+   The frontend will be available at `http://localhost:3000`.
 
-### Classify Email
 
-```
-POST /classify-email
-```
-
-Form data:
-- `email_content`: The body content of the email
-- `sender`: Email address of the sender
-- `subject`: Email subject line
-- `received_date`: Date when the email was received (ISO format)
-- `thread_id` (optional): Thread ID for duplicate detection
-- `source` (optional): Source of the email (outlook, gmail, api, other)
-- `attachments` (optional): File attachments
-
-### Classify Email (JSON)
-
-```
-POST /classify-email-json
-```
-
-JSON body:
-```json
-{
-  "sender": "client@example.com",
-  "subject": "Request for funds transfer",
-  "content": "Hello, We need to transfer $50,000 to account XYZ. Best regards, Client",
-  "received_date": "2023-11-15T10:30:00Z",
-  "attachments": [
-    {
-      "filename": "document.pdf",
-      "content_type": "application/pdf",
-      "content_b64": "JVBERi0xLjMKJcTl8uXrp/Ln..."
-    }
-  ],
-  "thread_id": "thread-12345",
-  "source": "outlook"
-}
-```
-
-### Get Request Types
-
-```
-GET /request-types
-```
-
-Returns all supported request types and sub-request types.
-
-### Health Check
-
-```
-GET /health
-```
-
-Returns the current health status of the system, including API key usage information.
-
-### Reset API Keys
-
-```
-POST /reset-api-keys
-```
-
-Resets all API key usage counters.
-
-## Response Format
-
-```json
-{
-  "request_types": [
-    {
-      "request_type": "Money Movement-Inbound",
-      "sub_request_type": "Principal",
-      "confidence": 0.95,
-      "reasoning": "Email explicitly mentions transferring funds to an account",
-      "is_primary": true
-    }
-  ],
-  "extracted_fields": [
-    {
-      "field_name": "amount",
-      "value": 50000,
-      "confidence": 0.98,
-      "source": "email_body"
-    },
-    {
-      "field_name": "account_number",
-      "value": "XYZ",
-      "confidence": 0.85,
-      "source": "email_body"
-    }
-  ],
-  "is_duplicate": false,
-  "duplicate_reason": null,
-  "processing_time_ms": 1250.5,
-  "error": null
-}
-```
-
-## Configuration
-
-### Request Types
-
-Request types are defined in `app/data/request_types.json`. You can modify this file to add or change request types and sub-request types.
-
-### Extraction Rules
-
-Extraction rules are defined in `app/data/extraction_rules.json`. These rules specify which fields to extract for each request type and the priority of sources.
-
-### Environment Variables
-
-- `PORT`: Server port (default: 8000)
-- `LOG_LEVEL`: Logging level (default: INFO)
-- `DUPLICATE_CACHE_DAYS`: Number of days to keep emails in cache for duplicate detection (default: 7)
-- `MAX_ATTACHMENT_SIZE_MB`: Maximum attachment size in MB (default: 10)
-
-API keys should be added in the format `SERVICE_API_KEY_LIMIT_PERIOD_INDEX`, for example:
-- `ANTHROPIC_API_KEY_50_60_1`: Anthropic API key with 50 calls per 60 minutes
-
-## Testing
-
-Run tests with pytest:
-
-```bash
-pytest
-```
-
-## Deployment
-
-### Docker
-
-Build the Docker image:
-
-```bash
-docker build -t email-classification-system .
-```
-
-Run the container:
-
-```bash
-docker run -d -p 8000:8000 --env-file .env email-classification-system
-```
-
-### Cloud Deployment
-
-The application can be deployed to any cloud platform that supports containerized applications, such as:
-- AWS Elastic Container Service (ECS)
-- Google Cloud Run
-- Azure Container Instances
 
 ## License
 
