@@ -1,22 +1,22 @@
 ## 📌 Table of Contents
 
-- [Introduction](#introduction)
+- [Introduction](Introduction)
 
-- [Demo](#demo)
+- [Demo](Demo)
 
-- [Inspiration](#inspiration)
+- [Inspiration](Inspiration)
 
-- [What It Does](#what-it-does)
+- [What It Does](What-it-does)
 
-- [How We Built It](#how-we-built-it)
+- [How We Built It](How-we-built-it)
 
-- [Challenges We Faced](#challenges-we-faced)
+- [Challenges We Faced](Challenges-we-faced)
 
-- [How to Run](#how-to-run)
+- [How to Run](How-to-run)
 
-- [Tech Stack](#tech-stack)
+- [Tech Stack](Tech-stack)
 
-- [Team](#team)
+- [Team](Team)
 
 ---
 ## 🎯 Introduction
@@ -312,9 +312,9 @@ The frontend will be available at `http://localhost:3000`.
 
 ## 👥 Team
 
-- Amith G - [GitHub](#) | [LinkedIn](#)
+- Amith G - [GitHub](https://github.com/amyyyth) | [LinkedIn](https://www.linkedin.com/in/amith-g-95abb5207)
 
-- Bhanu - [GitHub](#) | [LinkedIn](#)
+- Bhanu - [GitHub](https://github.com/BhanuPrakashPebbeti) | [LinkedIn](https://www.linkedin.com/in/bhanu-prakash-pebbeti-700b80191/)
 
-- Hilmi Parveen - [GitHub](#) | [LinkedIn](#)
+- Hilmi Parveen - [GitHub](https://github.com/hilmiparveen) | [LinkedIn](https://www.linkedin.com/in/hilmi-parveen/)
 
