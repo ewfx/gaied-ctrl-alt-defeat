@@ -155,23 +155,25 @@ export default function ClassifySuccess() {
               ))}
             </TableBody>
           </Table>
-          <Card className="p-8 bg-yellow-300/10">
-            <div className="text-2xl font-semibold flex items-baseline gap-2">
-              <FileWarning /> Potential Duplicate request
-            </div>
-            <Separator />
-            <div className="space-y-4 mt-2">
-              <p>
-                A duplicate file has been detected with a confidence of{" "}
-                <span className="font-bold">
-                  {data.duplicate_confidence.toFixed(3)}%
-                </span>
-                .
-              </p>
-              <div className="font-semibold text-lg">Reason:</div>
-              <div>{data.duplicate_reason}</div>
-            </div>
-          </Card>
+          {data.is_duplicate && (
+            <Card className="p-8 bg-yellow-300/10">
+              <div className="text-2xl font-semibold flex items-baseline gap-2">
+                <FileWarning /> Potential Duplicate request
+              </div>
+              <Separator />
+              <div className="space-y-4 mt-2">
+                <p>
+                  A duplicate file has been detected with a confidence of{" "}
+                  <span className="font-bold">
+                    {data.duplicate_confidence.toFixed(3)}%
+                  </span>
+                  .
+                </p>
+                <div className="font-semibold text-lg">Reason:</div>
+                <div>{data.duplicate_reason}</div>
+              </div>
+            </Card>
+          )}
         </CardContent>
         <CardFooter className="gap-4">
           {/* <Button size="lg" variant={"outline"}>
